@@ -1,11 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import MapView from 'react-native-maps';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Road Trip Planner</Text>
-      <Text>Road Trip Planner Application</Text>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: 35.2271,
+          longitude: -80.8431,
+          latitudeDelta: 30,
+          longitudeDelta: 30,
+        }}
+      />
       <StatusBar style="auto" />
     </View>
   );
@@ -14,8 +22,9 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
   },
 });

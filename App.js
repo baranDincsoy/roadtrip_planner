@@ -5,6 +5,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text>Road Trip Planner</Text>
+      <Text>Road Trip Planner Application</Text>
       <StatusBar style="auto" />
     </View>
   );

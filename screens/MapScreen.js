@@ -4,7 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { styles } from '../styles/MapScreen.styles';
 import { nationalParks } from '../data/nationalParks';
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <MapView
@@ -24,6 +24,7 @@ export default function MapScreen() {
               longitude: park.longitude,
             }}
             title={park.name}
+            onPress={() => navigation.navigate('ParkDetail', { park })}
           />
         ))}
       </MapView>

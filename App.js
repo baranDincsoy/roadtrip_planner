@@ -1,71 +1,37 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import MapScreen from './screens/MapScreen';
+import ParkDetailScreen from './screens/ParkDetailScreen';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-<MapView
-  style={styles.map}
-  initialRegion={{
-    latitude: 35.2271,
-    longitude: -80.8431,
-    latitudeDelta: 30,
-    longitudeDelta: 30,
-  }}
->
-  {nationalParks.map((park) => (
-    <Marker
-      key={park.id}
-      coordinate={{
-        latitude: park.latitude,
-        longitude: park.longitude,
-      }}
-      title={park.name}
-    />
-  ))}
-</MapView>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <StatusBar style="dark" />
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen 
+            name="Map" 
+            component={MapScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="ParkDetail" 
+            component={ParkDetailScreen}
+            options={{ 
+              title: 'Park Details',
+              headerStyle: { backgroundColor: '#fff' },
+              headerTitleStyle: { color: '#1e3a5f', fontWeight: 'bold' },
+              headerTintColor: '#1e3a5f',
+              headerStatusBarHeight: 30,
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
-
-const nationalParks = [
-  {
-    id: 1,
-    name: 'Great Smoky Mountains',
-    latitude: 35.6131,
-    longitude: -83.5532,
-  },
-  {
-    id: 2,
-    name: 'Shenandoah',
-    latitude: 38.2928,
-    longitude: -78.6796,
-  },
-  {
-    id: 3,
-    name: 'Congaree',
-    latitude: 33.7948,
-    longitude: -80.7821,
-  },
-  {
-    id: 4,
-    name: 'Mammoth Cave',
-    latitude: 37.1862,
-    longitude: -86.1000,
-  },
-];
-
-
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-});

@@ -1,10 +1,24 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { styles } from '../styles/MapScreen.styles';
 import { nationalParks } from '../data/nationalParks';
+import ParkBottomSheet from '../components/ParkBottomSheet';
 
-export default function MapScreen({ navigation }) {
+export default function MapScreen() {
+  const [selectedPark, setSelectedPark] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleMarkerPress = (park) => {
+    setSelectedPark(park);
+    setModalVisible(true);
+  };
+
+  const handleClose = () => {
+    setModalVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -24,10 +38,16 @@ export default function MapScreen({ navigation }) {
               longitude: park.longitude,
             }}
             title={park.name}
-            onPress={() => navigation.navigate('ParkDetail', { park })}
+            onPress={() => handleMarkerPress(park)}
           />
         ))}
       </MapView>
+
+      <ParkBottomSheet
+        visible={modalVisible}
+        park={selectedPark}
+        onClose={handleClose}
+      />
     </View>
   );
 }

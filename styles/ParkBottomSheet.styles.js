@@ -10,10 +10,9 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 20,
     paddingBottom: 30,
-    maxHeight: '80%',
-    minHeight: '40%',
+    maxHeight: '85%',
+    minHeight: '50%',
   },
   handle: {
     width: 60,
@@ -28,6 +27,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 16,
+    paddingHorizontal: 20,
   },
   headerContent: {
     flex: 1,
@@ -58,6 +58,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 20,
+    paddingHorizontal: 20,
   },
   primaryButton: {
     flex: 1,
@@ -83,10 +84,27 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  section: {
+    marginBottom: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e3a5f',
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  videoList: {
+    paddingHorizontal: 20,
+  },
   info: {
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    paddingHorizontal: 20,
   },
   infoTitle: {
     fontSize: 14,

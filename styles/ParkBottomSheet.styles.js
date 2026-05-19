@@ -23,11 +23,13 @@ export const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 16,
   },
-  header: {
+  stickyHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
     paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   headerContent: {
     flex: 1,
@@ -53,6 +55,9 @@ export const styles = StyleSheet.create({
   closeText: {
     fontSize: 16,
     color: '#666',
+  },
+  scrollContent: {
+    paddingTop: 16,
   },
   buttonRow: {
     flexDirection: 'row',

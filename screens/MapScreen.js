@@ -69,15 +69,16 @@ export default function MapScreen() {
         }}
       >
         {parks.map((park) => (
-          <Marker
-            key={park.id}
-            coordinate={{
-              latitude: park.latitude,
-              longitude: park.longitude,
-            }}
-            title={park.shortName}
-            onPress={() => handleMarkerPress(park)}
-          />
+<Marker
+  key={park.id}
+  coordinate={{
+    latitude: park.latitude,
+    longitude: park.longitude,
+  }}
+  title={park.shortName}
+  pinColor={park.pinColor}
+  onPress={() => handleMarkerPress(park)}
+/>
         ))}
       </MapView>
 

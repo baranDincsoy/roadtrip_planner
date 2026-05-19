@@ -4,6 +4,19 @@ export const nationalParks = [
     name: 'Great Smoky Mountains',
     latitude: 35.6131,
     longitude: -83.5532,
+    description: 'Great Smoky Mountains National Park is the most visited national park in the United States. Straddling the border of North Carolina and Tennessee, it features stunning mountain vistas, diverse wildlife including black bears and elk, over 800 miles of hiking trails, and the iconic Clingmans Dome — the highest point in Tennessee.',
+    photos: [
+      { id: 'p1', color: '#2d5a3d' },
+      { id: 'p2', color: '#4a7c59' },
+      { id: 'p3', color: '#1e3a5f' },
+      { id: 'p4', color: '#5a8d72' },
+      { id: 'p5', color: '#3d6b4f' },
+    ],
+    reviews: [
+      { id: 'r1', author: 'Sarah M.', rating: 5, text: 'Absolutely breathtaking views from Clingmans Dome. Go early to avoid crowds!', date: '2 weeks ago' },
+      { id: 'r2', author: 'Mike T.', rating: 4, text: 'Great hiking trails for all levels. The bears were a nice surprise!', date: '1 month ago' },
+      { id: 'r3', author: 'Jennifer L.', rating: 5, text: 'Best fall foliage I have ever seen. October is the perfect time.', date: '3 months ago' },
+    ],
     videos: [
       { id: 'v1', title: 'Top 5 Trails You Must See', channel: 'YourChannel', views: '234K', isYours: true },
       { id: 'v2', title: 'Hiking Clingmans Dome Guide', channel: 'HikingNC', views: '87K', isYours: false },
@@ -17,6 +30,19 @@ export const nationalParks = [
     name: 'Shenandoah',
     latitude: 38.2928,
     longitude: -78.6796,
+    description: 'Shenandoah National Park lies just 75 miles from the bustle of Washington, D.C. With cascading waterfalls, spectacular vistas along Skyline Drive, and quiet wooded hollows, this Virginia park offers a peaceful escape into the Blue Ridge Mountains.',
+    photos: [
+      { id: 'p6', color: '#3a5d7d' },
+      { id: 'p7', color: '#5a7d9d' },
+      { id: 'p8', color: '#1e3a5f' },
+      { id: 'p9', color: '#4a6d8d' },
+      { id: 'p10', color: '#2d4d6d' },
+    ],
+    reviews: [
+      { id: 'r4', author: 'David K.', rating: 5, text: 'Skyline Drive is a must! 105 miles of pure scenic beauty.', date: '1 week ago' },
+      { id: 'r5', author: 'Emily R.', rating: 4, text: 'Old Rag Mountain is challenging but so worth it. Bring water!', date: '2 months ago' },
+      { id: 'r6', author: 'Tom P.', rating: 5, text: 'Saw black bears with cubs from a safe distance. Magical experience.', date: '4 months ago' },
+    ],
     videos: [
       { id: 'v6', title: 'Skyline Drive Complete Guide', channel: 'YourChannel', views: '189K', isYours: true },
       { id: 'v7', title: 'Old Rag Mountain Hike', channel: 'HikingVA', views: '95K', isYours: false },
@@ -30,6 +56,19 @@ export const nationalParks = [
     name: 'Congaree',
     latitude: 33.7948,
     longitude: -80.7821,
+    description: 'Congaree National Park preserves the largest intact expanse of old growth bottomland hardwood forest remaining in the southeastern United States. Towering cypress and tupelo trees, abundant wildlife, and the synchronous fireflies make this South Carolina park truly unique.',
+    photos: [
+      { id: 'p11', color: '#3d5a3d' },
+      { id: 'p12', color: '#5a7c4a' },
+      { id: 'p13', color: '#2d4a2d' },
+      { id: 'p14', color: '#6b8d4a' },
+      { id: 'p15', color: '#4a6b3a' },
+    ],
+    reviews: [
+      { id: 'r7', author: 'Lisa W.', rating: 5, text: 'The boardwalk is accessible and the cypress trees are mind-blowing!', date: '3 weeks ago' },
+      { id: 'r8', author: 'Carlos M.', rating: 4, text: 'Saw the synchronous fireflies in May. Once in a lifetime experience.', date: '5 months ago' },
+      { id: 'r9', author: 'Anna J.', rating: 5, text: 'Free entry and so peaceful. Bring bug spray though!', date: '1 month ago' },
+    ],
     videos: [
       { id: 'v11', title: 'Boardwalk Loop in 4K', channel: 'YourChannel', views: '76K', isYours: true },
       { id: 'v12', title: 'Kayaking Cedar Creek', channel: 'KayakLife', views: '45K', isYours: false },
@@ -43,6 +82,19 @@ export const nationalParks = [
     name: 'Mammoth Cave',
     latitude: 37.1862,
     longitude: -86.1000,
+    description: 'Mammoth Cave National Park preserves the cave system and a part of the Green River valley and hilly country of south central Kentucky. The park has the world\'s longest known cave system, with more than 400 miles explored. Tours range from easy walks to wild caving adventures.',
+    photos: [
+      { id: 'p16', color: '#4a3a2d' },
+      { id: 'p17', color: '#5a4a3d' },
+      { id: 'p18', color: '#2d1e3f' },
+      { id: 'p19', color: '#6b5a4a' },
+      { id: 'p20', color: '#3a2d1e' },
+    ],
+    reviews: [
+      { id: 'r10', author: 'Robert H.', rating: 5, text: 'The Historic Tour blew my mind. So much geology and history!', date: '1 week ago' },
+      { id: 'r11', author: 'Patricia G.', rating: 5, text: 'Wild Cave Tour was intense but unforgettable. Book in advance!', date: '2 months ago' },
+      { id: 'r12', author: 'Steve B.', rating: 4, text: 'Bring layers — its cool inside even in summer. Tours are worth it.', date: '3 weeks ago' },
+    ],
     videos: [
       { id: 'v16', title: 'World\'s Longest Cave System', channel: 'YourChannel', views: '312K', isYours: true },
       { id: 'v17', title: 'Historic Tour Experience', channel: 'CaveExplorer', views: '89K', isYours: false },

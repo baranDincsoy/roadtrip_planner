@@ -2,11 +2,13 @@ import { Modal, Text, View, TouchableOpacity, ScrollView, FlatList } from 'react
 
 import { styles } from '../styles/ParkBottomSheet.styles';
 import VideoCard from './VideoCard';
+import PhotoGallery from './PhotoGallery';
+import AboutSection from './AboutSection';
+import ReviewsSection from './ReviewsSection';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const handleVideoPress = (video) => {
     console.log('Video pressed:', video.title);
-    // İleride: in-app YouTube player aç
   };
 
   return (
@@ -56,6 +58,21 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.videoList}
                 />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>📸 Photos</Text>
+                <PhotoGallery photos={park.photos} />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>📝 About</Text>
+                <AboutSection description={park.description} />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>⭐ Reviews & Tips</Text>
+                <ReviewsSection reviews={park.reviews} />
               </View>
 
               <View style={styles.info}>

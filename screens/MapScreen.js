@@ -17,6 +17,7 @@ export default function MapScreen() {
   const [selectedPark, setSelectedPark] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState('wide');
 
   const mapRef = useRef(null);
 
@@ -76,9 +77,39 @@ export default function MapScreen() {
     }, 1000);
   };
 
-  const filteredParks = parks.filter(park =>
-    selectedCategories.includes(park.designation)
-  );
+  const handleRegionChange = (region) => {
+    if (region.latitudeDelta > 20) {
+      setZoomLevel('wide');
+    } else if (region.latitudeDelta > 5) {
+      setZoomLevel('medium');
+    } else {
+      setZoomLevel('close');
+    }
+  };
+
+  const filteredParks = parks.filter(park => {
+    if (!selectedCategories.includes(park.designation)) {
+      return false;
+    }
+
+    if (zoomLevel === 'wide') {
+      return park.designation === 'National Park' || park.designation === 'National Historical Park';
+    }
+
+    if (zoomLevel === 'medium') {
+      const importantCategories = [
+        'National Park',
+        'National Historical Park',
+        'National Monument',
+        'National Seashore',
+        'National Recreation Area',
+        'National Preserve',
+      ];
+      return importantCategories.includes(park.designation);
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -108,6 +139,7 @@ export default function MapScreen() {
           latitudeDelta: 30,
           longitudeDelta: 50,
         }}
+        onRegionChangeComplete={handleRegionChange}
       >
         {filteredParks.map((park) => (
           <Marker
@@ -139,6 +171,7 @@ export default function MapScreen() {
       <View style={styles.countBadge}>
         <Text style={styles.countText}>
           {filteredParks.length} location{filteredParks.length !== 1 ? 's' : ''}
+          {zoomLevel === 'wide' && ' (zoom in for more)'}
         </Text>
       </View>
 

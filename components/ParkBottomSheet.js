@@ -5,11 +5,18 @@ import VideoCard from './VideoCard';
 import PhotoGallery from './PhotoGallery';
 import AboutSection from './AboutSection';
 import ReviewsSection from './ReviewsSection';
+import { openDirections } from '../utils/linking';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const handleVideoPress = (video) => {
     console.log('Video pressed:', video.title);
   };
+
+  const handleDirections = () => {
+  if (park) {
+    openDirections(park.latitude, park.longitude, park.shortName);
+  }
+};
 
   return (
     <Modal
@@ -43,9 +50,9 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
                     contentContainerStyle={styles.scrollContent}
                   >
                     <View style={styles.buttonRow}>
-                      <TouchableOpacity style={styles.primaryButton}>
-                        <Text style={styles.primaryButtonText}>🧭 Directions</Text>
-                      </TouchableOpacity>
+<TouchableOpacity style={styles.primaryButton} onPress={handleDirections}>
+  <Text style={styles.primaryButtonText}>🧭 Directions</Text>
+</TouchableOpacity>
                       <TouchableOpacity style={styles.secondaryButton}>
                         <Text style={styles.secondaryButtonText}>▶ Start</Text>
                       </TouchableOpacity>

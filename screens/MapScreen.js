@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -6,6 +6,7 @@ import { styles } from '../styles/MapScreen.styles';
 import { fetchNationalParks, getAvailableCategories } from '../services/npsService';
 import ParkBottomSheet from '../components/ParkBottomSheet';
 import FilterDrawer from '../components/DrawerContent';
+import SearchBar from '../components/SearchBar';
 
 export default function MapScreen() {
   const [parks, setParks] = useState([]);
@@ -16,6 +17,8 @@ export default function MapScreen() {
   const [selectedPark, setSelectedPark] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
+
+  const mapRef = useRef(null);
 
   useEffect(() => {
     loadParks();
@@ -61,7 +64,19 @@ export default function MapScreen() {
     setModalVisible(true);
   };
 
-  const filteredParks = parks.filter(park => 
+  const handleSelectResult = (park) => {
+    setSelectedPark(park);
+    setModalVisible(true);
+
+    mapRef.current?.animateToRegion({
+      latitude: park.latitude,
+      longitude: park.longitude,
+      latitudeDelta: 2,
+      longitudeDelta: 2,
+    }, 1000);
+  };
+
+  const filteredParks = parks.filter(park =>
     selectedCategories.includes(park.designation)
   );
 
@@ -85,6 +100,7 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
           latitude: 39.5,
@@ -114,6 +130,11 @@ export default function MapScreen() {
       >
         <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
+
+      <SearchBar
+        parks={parks}
+        onSelectResult={handleSelectResult}
+      />
 
       <View style={styles.countBadge}>
         <Text style={styles.countText}>

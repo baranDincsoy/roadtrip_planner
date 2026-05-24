@@ -3,7 +3,14 @@ import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { styles } from '../styles/TripPlannerScreen.styles';
-import { getSavedParks, removeFromTrip, clearTrip } from '../services/tripService';
+import { 
+  getSavedParks, 
+  removeFromTrip, 
+  clearTrip, 
+  toggleVisited, 
+  reorderStops 
+} from '../services/tripService';
+import { openRoute } from '../utils/linking';
 
 export default function TripPlannerScreen({ navigation }) {
   const [savedParks, setSavedParks] = useState([]);
@@ -60,6 +67,30 @@ export default function TripPlannerScreen({ navigation }) {
     );
   };
 
+  const handleSetRoute = () => {
+    openRoute(savedParks);
+  };
+
+  const handleToggleVisited = async (parkId) => {
+    await toggleVisited(parkId);
+    loadSavedParks();
+  };
+
+  const handleMoveUp = async (index) => {
+    if (index === 0) return;
+    await reorderStops(index, index - 1);
+    loadSavedParks();
+  };
+
+  const handleMoveDown = async (index) => {
+    if (index === savedParks.length - 1) return;
+    await reorderStops(index, index + 1);
+    loadSavedParks();
+  };
+
+  const upcomingCount = savedParks.filter(p => p.status !== 'visited').length;
+  const visitedCount = savedParks.filter(p => p.status === 'visited').length;
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -77,7 +108,9 @@ export default function TripPlannerScreen({ navigation }) {
         <View style={styles.headerContent}>
           <Text style={styles.title}>My Trip</Text>
           <Text style={styles.subtitle}>
-            {savedParks.length} park{savedParks.length !== 1 ? 's' : ''} saved
+            {visitedCount > 0 
+              ? `${visitedCount} visited · ${upcomingCount} upcoming`
+              : `${savedParks.length} park${savedParks.length !== 1 ? 's' : ''} saved`}
           </Text>
         </View>
         {savedParks.length > 0 && (
@@ -86,6 +119,26 @@ export default function TripPlannerScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </View>
+
+      {savedParks.length > 0 && (
+        <View style={styles.routeContainer}>
+          <TouchableOpacity 
+            style={styles.routeButton} 
+            onPress={handleSetRoute}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.routeIcon}>🧭</Text>
+            <Text style={styles.routeText}>Set Route in Google Maps</Text>
+          </TouchableOpacity>
+          <Text style={styles.routeHint}>
+            {upcomingCount === 0 
+              ? 'All parks visited!' 
+              : upcomingCount === 1 
+                ? 'Opens directions to your park' 
+                : `Multi-stop route: ${upcomingCount} parks`}
+          </Text>
+        </View>
+      )}
 
       {savedParks.length === 0 ? (
         <View style={styles.emptyState}>
@@ -100,28 +153,73 @@ export default function TripPlannerScreen({ navigation }) {
           data={savedParks}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item, index }) => (
-            <View style={styles.card}>
-              <View style={styles.cardNumber}>
-                <Text style={styles.cardNumberText}>{index + 1}</Text>
-              </View>
-              <View style={[styles.cardColorBar, { backgroundColor: item.pinColor }]} />
-              <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardIcon}>{item.categoryIcon}</Text>
-                  <Text style={styles.cardName} numberOfLines={1}>
-                    {item.name}
+          renderItem={({ item, index }) => {
+            const isVisited = item.status === 'visited';
+            const isFirst = index === 0;
+            const isLast = index === savedParks.length - 1;
+            
+            return (
+              <View style={[styles.card, isVisited && styles.cardVisited]}>
+                <View style={styles.cardNumber}>
+                  <Text style={[styles.cardNumberText, isVisited && styles.cardNumberVisited]}>
+                    {index + 1}
                   </Text>
                 </View>
-                <Text style={styles.cardMeta}>
-                  {item.designation} · {item.states}
-                </Text>
+                <View style={[styles.cardColorBar, { backgroundColor: item.pinColor }, isVisited && styles.cardColorBarVisited]} />
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardIcon}>{item.categoryIcon}</Text>
+                    <Text 
+                      style={[
+                        styles.cardName, 
+                        isVisited && styles.cardNameVisited
+                      ]} 
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+                  <Text style={[styles.cardMeta, isVisited && styles.cardMetaVisited]}>
+                    {isVisited ? '✓ Visited' : `${item.designation} · ${item.states}`}
+                  </Text>
+                </View>
+                
+                <View style={styles.actionColumn}>
+                  <TouchableOpacity 
+                    onPress={() => handleMoveUp(index)} 
+                    style={[styles.arrowButton, isFirst && styles.arrowDisabled]}
+                    disabled={isFirst}
+                  >
+                    <Text style={[styles.arrowIcon, isFirst && styles.arrowIconDisabled]}>↑</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => handleMoveDown(index)} 
+                    style={[styles.arrowButton, isLast && styles.arrowDisabled]}
+                    disabled={isLast}
+                  >
+                    <Text style={[styles.arrowIcon, isLast && styles.arrowIconDisabled]}>↓</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.actionColumn}>
+                  <TouchableOpacity 
+                    onPress={() => handleToggleVisited(item.id)} 
+                    style={[styles.visitButton, isVisited && styles.visitButtonActive]}
+                  >
+                    <Text style={[styles.visitIcon, isVisited && styles.visitIconActive]}>
+                      {isVisited ? '✓' : '○'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => handleRemove(item)} 
+                    style={styles.removeButton}
+                  >
+                    <Text style={styles.removeIcon}>✕</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => handleRemove(item)} style={styles.removeButton}>
-                <Text style={styles.removeIcon}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </View>

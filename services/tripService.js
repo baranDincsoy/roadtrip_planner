@@ -29,7 +29,9 @@ export const addToTrip = async (park) => {
       pinColor: park.pinColor,
       categoryIcon: park.categoryIcon,
       states: park.states,
+      status: 'upcoming',
       addedAt: new Date().toISOString(),
+      visitedAt: null,
     }];
     
     await AsyncStorage.setItem(TRIP_KEY, JSON.stringify(newSaved));
@@ -67,6 +69,49 @@ export const clearTrip = async () => {
     return { success: true };
   } catch (error) {
     console.error('Error clearing trip:', error);
+    return { success: false };
+  }
+};
+
+export const toggleVisited = async (parkId) => {
+  try {
+    const saved = await getSavedParks();
+    const newSaved = saved.map(park => {
+      if (park.id !== parkId) return park;
+      
+      const isVisited = park.status === 'visited';
+      return {
+        ...park,
+        status: isVisited ? 'upcoming' : 'visited',
+        visitedAt: isVisited ? null : new Date().toISOString(),
+      };
+    });
+    
+    await AsyncStorage.setItem(TRIP_KEY, JSON.stringify(newSaved));
+    return { success: true };
+  } catch (error) {
+    console.error('Error toggling visited:', error);
+    return { success: false };
+  }
+};
+
+export const reorderStops = async (fromIndex, toIndex) => {
+  try {
+    const saved = await getSavedParks();
+    
+    if (fromIndex < 0 || toIndex < 0 || 
+        fromIndex >= saved.length || toIndex >= saved.length) {
+      return { success: false, reason: 'invalid_index' };
+    }
+    
+    const newSaved = [...saved];
+    const [movedItem] = newSaved.splice(fromIndex, 1);
+    newSaved.splice(toIndex, 0, movedItem);
+    
+    await AsyncStorage.setItem(TRIP_KEY, JSON.stringify(newSaved));
+    return { success: true };
+  } catch (error) {
+    console.error('Error reordering:', error);
     return { success: false };
   }
 };

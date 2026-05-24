@@ -8,7 +8,7 @@ import ParkBottomSheet from '../components/ParkBottomSheet';
 import FilterDrawer from '../components/DrawerContent';
 import SearchBar from '../components/SearchBar';
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
   const [parks, setParks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -154,6 +154,13 @@ export default function MapScreen() {
           />
         ))}
       </MapView>
+      <TouchableOpacity
+  style={styles.tripButton}
+  onPress={() => navigation.navigate('TripPlanner')}
+  activeOpacity={0.8}
+>
+  <Text style={styles.tripIcon}>🗺️</Text>
+</TouchableOpacity>
 
       <TouchableOpacity
         style={styles.menuButton}

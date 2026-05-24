@@ -7,7 +7,44 @@ import AboutSection from './AboutSection';
 import ReviewsSection from './ReviewsSection';
 import { openDirections } from '../utils/linking';
 
+import { useState, useEffect } from 'react';
+import { Alert } from 'react-native';
+import { addToTrip, isInTrip, removeFromTrip } from '../services/tripService';
+
 export default function ParkBottomSheet({ visible, park, onClose }) {
+
+    const [inTrip, setInTrip] = useState(false);
+
+  useEffect(() => {
+    if (park && visible) {
+      checkIfInTrip();
+    }
+  }, [park, visible]);
+
+  const checkIfInTrip = async () => {
+    if (!park) return;
+    const result = await isInTrip(park.id);
+    setInTrip(result);
+  };
+
+  const handleAddToTrip = async () => {
+    if (!park) return;
+
+    if (inTrip) {
+      await removeFromTrip(park.id);
+      setInTrip(false);
+      Alert.alert('Removed', `${park.shortName} removed from your trip.`);
+    } else {
+      const result = await addToTrip(park);
+      if (result.success) {
+        setInTrip(true);
+        Alert.alert('Added!', `${park.shortName} added to your trip.`);
+      } else if (result.reason === 'already_added') {
+        Alert.alert('Already added', 'This park is already in your trip.');
+      }
+    }
+  };
+
   const handleVideoPress = (video) => {
     console.log('Video pressed:', video.title);
   };
@@ -56,9 +93,14 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
                       <TouchableOpacity style={styles.secondaryButton}>
                         <Text style={styles.secondaryButtonText}>▶ Start</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.secondaryButton}>
-                        <Text style={styles.secondaryButtonText}>＋ Add</Text>
-                      </TouchableOpacity>
+<TouchableOpacity 
+  style={[styles.secondaryButton, inTrip && styles.addedButton]} 
+  onPress={handleAddToTrip}
+>
+  <Text style={[styles.secondaryButtonText, inTrip && styles.addedButtonText]}>
+    {inTrip ? '✓ Added' : '＋ Add'}
+  </Text>
+</TouchableOpacity>
                     </View>
 
                     <View style={styles.section}>

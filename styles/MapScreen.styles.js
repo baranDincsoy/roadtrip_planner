@@ -65,4 +65,23 @@ countBadge: {
     fontWeight: '600',
     color: '#1e3a5f',
   },
+  tripButton: {
+  position: 'absolute',
+  bottom: 30,
+  right: 16,
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  backgroundColor: '#1e3a5f',
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 6,
+},
+tripIcon: {
+  fontSize: 26,
+},
 });

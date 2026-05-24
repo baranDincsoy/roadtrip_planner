@@ -121,4 +121,10 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
+  addedButton: {
+  backgroundColor: '#e8f5e9',
+},
+addedButtonText: {
+  color: '#2e7d32',
+},
 });

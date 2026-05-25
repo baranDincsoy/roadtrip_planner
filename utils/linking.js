@@ -1,6 +1,32 @@
 import { Linking, Platform, Alert } from 'react-native';
 
+export const openDirections = async (latitude, longitude, label) => {
+  const encodedLabel = encodeURIComponent(label || 'Destination');
+  
+  const url = Platform.select({
+    ios: `maps://?daddr=${latitude},${longitude}&q=${encodedLabel}`,
+    android: `geo:0,0?q=${latitude},${longitude}(${encodedLabel})`,
+  });
 
+  const webFallback = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+
+  try {
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      await Linking.openURL(webFallback);
+    }
+  } catch (error) {
+    console.error('Error opening directions:', error);
+    Alert.alert(
+      'Error',
+      'Could not open maps. Please try again.',
+      [{ text: 'OK' }]
+    );
+  }
+};
 
 export const openRoute = async (parks) => {
   if (!parks || parks.length === 0) {
@@ -23,11 +49,11 @@ export const openRoute = async (parks) => {
   }
 
   try {
-const stops = upcoming
-  .map(p => encodeURIComponent(p.name))
-  .join('/');
+    const coordinates = upcoming
+      .map(p => `${p.latitude},${p.longitude}`)
+      .join('/');
 
-const url = `https://www.google.com/maps/dir//${stops}`;
+    const url = `https://www.google.com/maps/dir//${coordinates}`;
 
     const supported = await Linking.canOpenURL(url);
     

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert } from 'react-native';
+import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert} from 'react-native';
 
 import { styles } from '../styles/ParkBottomSheet.styles';
 import VideoCard from './VideoCard';
@@ -58,6 +58,17 @@ const loadVideos = async () => {
     }
   };
 
+  const handleStart = () => {
+  if (!park) return;
+  
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${park.latitude},${park.longitude}&travelmode=driving&dir_action=navigate`;
+  
+  Linking.openURL(url).catch(err => {
+    console.error('Could not start navigation:', err);
+    Alert.alert('Error', 'Could not start navigation.');
+  });
+};
+
 const handleVideoPress = async (video) => {
   const url = `https://www.youtube.com/watch?v=${video.id}`;
   try {
@@ -101,9 +112,9 @@ const handleVideoPress = async (video) => {
                         <TouchableOpacity style={styles.primaryButton} onPress={handleDirections}>
                           <Text style={styles.primaryButtonText}>🧭 Directions</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.secondaryButton}>
-                          <Text style={styles.secondaryButtonText}>▶ Start</Text>
-                        </TouchableOpacity>
+<TouchableOpacity style={styles.secondaryButton} onPress={handleStart}>
+  <Text style={styles.secondaryButtonText}>▶ Start</Text>
+</TouchableOpacity>
                         <TouchableOpacity 
                           style={[styles.secondaryButton, tripInfo.inTrip && styles.addedButton]} 
                           onPress={handleAddPress}

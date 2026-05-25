@@ -4,7 +4,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import MapScreen from './screens/MapScreen';
-import TripPlannerScreen from './screens/TripPlannerScreen';
+import TripListScreen from './screens/TripListScreen';
+import TripDetailScreen from './screens/TripDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -15,7 +16,8 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Map" component={MapScreen} />
-          <Stack.Screen name="TripPlanner" component={TripPlannerScreen} />
+          <Stack.Screen name="TripList" component={TripListScreen} />
+          <Stack.Screen name="TripDetail" component={TripDetailScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

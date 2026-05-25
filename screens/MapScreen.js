@@ -156,7 +156,7 @@ export default function MapScreen({ navigation }) {
       </MapView>
       <TouchableOpacity
   style={styles.tripButton}
-  onPress={() => navigation.navigate('TripPlanner')}
+  onPress={() => navigation.navigate('TripList')}
   activeOpacity={0.8}
 >
   <Text style={styles.tripIcon}>🗺️</Text>

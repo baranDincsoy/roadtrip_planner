@@ -28,8 +28,6 @@ const stops = upcoming
   .join('/');
 
 const url = `https://www.google.com/maps/dir//${stops}`;
-    console.log('Route URL:', url);
-    console.log('Upcoming parks count:', upcoming.length);
 
     const supported = await Linking.canOpenURL(url);
     

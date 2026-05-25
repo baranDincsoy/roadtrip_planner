@@ -9,16 +9,30 @@ import ReviewsSection from './ReviewsSection';
 import TripSelectorModal from './TripSelectorModal';
 import { isParkInAnyTrip } from '../services/tripService';
 import { openDirections } from '../utils/linking';
+import { fetchVideosForPark } from '../services/youtubeService';
+import { Linking } from 'react-native';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
   const [selectorVisible, setSelectorVisible] = useState(false);
 
-  useEffect(() => {
-    if (park && visible) {
-      checkTripStatus();
-    }
-  }, [park, visible]);
+  const [videos, setVideos] = useState([]);
+const [loadingVideos, setLoadingVideos] = useState(false);
+
+useEffect(() => {
+  if (park && visible) {
+    checkTripStatus();
+    loadVideos();
+  }
+}, [park, visible]);
+
+const loadVideos = async () => {
+  if (!park) return;
+  setLoadingVideos(true);
+  const fetchedVideos = await fetchVideosForPark(park.shortName);
+  setVideos(fetchedVideos);
+  setLoadingVideos(false);
+};
 
   const checkTripStatus = async () => {
     if (!park) return;
@@ -44,9 +58,14 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
     }
   };
 
-  const handleVideoPress = (video) => {
-    console.log('Video pressed:', video.title);
-  };
+const handleVideoPress = async (video) => {
+  const url = `https://www.youtube.com/watch?v=${video.id}`;
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    console.error('Could not open YouTube:', error);
+  }
+};
 
   return (
     <>
@@ -105,16 +124,26 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
 
                       <View style={styles.section}>
                         <Text style={styles.sectionTitle}>🎥 Shorts</Text>
-                        <FlatList
-                          data={park.videos}
-                          renderItem={({ item }) => (
-                            <VideoCard video={item} onPress={() => handleVideoPress(item)} />
-                          )}
-                          keyExtractor={(item) => item.id}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.videoList}
-                        />
+{loadingVideos ? (
+  <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ color: '#999' }}>Loading videos...</Text>
+  </View>
+) : videos.length === 0 ? (
+  <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ color: '#999' }}>No videos available</Text>
+  </View>
+) : (
+  <FlatList
+    data={videos}
+    renderItem={({ item }) => (
+      <VideoCard video={item} onPress={() => handleVideoPress(item)} />
+    )}
+    keyExtractor={(item) => item.id}
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={styles.videoList}
+  />
+)}
                       </View>
 
                       <View style={styles.section}>

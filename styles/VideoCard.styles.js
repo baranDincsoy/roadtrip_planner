@@ -2,20 +2,25 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
-    width: 120,
+    width: 140,
     marginRight: 10,
   },
-  thumbnail: {
-    width: 120,
+  thumbnailContainer: {
+    width: 140,
     height: 200,
-    backgroundColor: '#444',
     borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    position: 'relative',
   },
-  thumbnailYours: {
-    backgroundColor: '#1e3a5f',
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
+    backgroundColor: '#444',
   },
   yoursBadge: {
     position: 'absolute',
@@ -25,6 +30,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    zIndex: 2,
   },
   yoursBadgeText: {
     fontSize: 8,
@@ -32,10 +38,11 @@ export const styles = StyleSheet.create({
     color: '#1e3a5f',
   },
   playIconContainer: {
+    position: 'absolute',
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -51,9 +58,14 @@ export const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 16,
   },
+  channel: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
   views: {
     fontSize: 10,
     color: '#999',
-    marginTop: 2,
+    marginTop: 1,
   },
 });

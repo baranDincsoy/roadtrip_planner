@@ -127,4 +127,21 @@ export const styles = StyleSheet.create({
 addedButtonText: {
   color: '#2e7d32',
 },
+tripBadge: {
+  marginHorizontal: 20,
+  marginBottom: 12,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  backgroundColor: '#e8f5e9',
+  borderRadius: 8,
+  alignSelf: 'flex-start',
+},
+tripBadgeText: {
+  fontSize: 12,
+  color: '#666',
+},
+tripBadgeName: {
+  fontWeight: '700',
+  color: '#2e7d32',
+},
 });

@@ -144,4 +144,45 @@ tripBadgeName: {
   fontWeight: '700',
   color: '#2e7d32',
 },
+trailInfoCard: {
+  backgroundColor: '#f8f9fa',
+  marginHorizontal: 20,
+  padding: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#e8f5e9',
+},
+trailInfoRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  paddingVertical: 8,
+  borderBottomWidth: 1,
+  borderBottomColor: '#eee',
+},
+trailInfoLabel: {
+  fontSize: 13,
+  color: '#666',
+  fontWeight: '500',
+},
+trailInfoValue: {
+  fontSize: 13,
+  color: '#1e3a5f',
+  fontWeight: '600',
+},
+trailYes: {
+  color: '#2e7d32',
+},
+trailNo: {
+  color: '#999',
+},
+trailDescription: {
+  fontSize: 13,
+  color: '#555',
+  paddingHorizontal: 20,
+  lineHeight: 20,
+},
+trailUnknown: {
+  color: '#999',
+  fontStyle: 'italic',
+},
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert} from 'react-native';
+import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert, Linking } from 'react-native';
 
 import { styles } from '../styles/ParkBottomSheet.styles';
 import VideoCard from './VideoCard';
@@ -8,16 +8,16 @@ import AboutSection from './AboutSection';
 import ReviewsSection from './ReviewsSection';
 import TripSelectorModal from './TripSelectorModal';
 import { isParkInAnyTrip } from '../services/tripService';
-import { openDirections } from '../utils/linking';
 import { fetchVideosForPark } from '../services/youtubeService';
-import { Linking } from 'react-native';
+import { openDirections } from '../utils/linking';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
   const [selectorVisible, setSelectorVisible] = useState(false);
-
   const [videos, setVideos] = useState([]);
-const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+
+  const isTrail = park?.type === 'trail';
 
 useEffect(() => {
   if (park && visible) {
@@ -26,20 +26,25 @@ useEffect(() => {
   }
 }, [park, visible]);
 
-const loadVideos = async () => {
-  if (!park) return;
-  setLoadingVideos(true);
-  const fetchedVideos = await fetchVideosForPark(park.shortName);
-  setVideos(fetchedVideos);
-  setLoadingVideos(false);
-};
-
   const checkTripStatus = async () => {
     if (!park) return;
     const info = await isParkInAnyTrip(park.id);
     setTripInfo(info);
   };
 
+const loadVideos = async () => {
+  if (!park) return;
+  setLoadingVideos(true);
+  const fetchedVideos = await fetchVideosForPark(
+    park.shortName || park.name,
+    {
+      type: park.type === 'trail' ? 'trail' : 'park',
+      state: park.states,
+    }
+  );
+  setVideos(fetchedVideos);
+  setLoadingVideos(false);
+};
   const handleAddPress = () => {
     setSelectorVisible(true);
   };
@@ -47,36 +52,163 @@ const loadVideos = async () => {
   const handleAddSuccess = ({ trip, action }) => {
     Alert.alert(
       action === 'created' ? 'Trip Created!' : 'Added!',
-      `${park.shortName} added to "${trip.name}".`
+      `${park.shortName || park.name} added to "${trip.name}".`
     );
     checkTripStatus();
   };
 
   const handleDirections = () => {
     if (park) {
-      openDirections(park.latitude, park.longitude, park.shortName);
+      openDirections(park.latitude, park.longitude, park.shortName || park.name);
     }
   };
 
   const handleStart = () => {
-  if (!park) return;
-  
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${park.latitude},${park.longitude}&travelmode=driving&dir_action=navigate`;
-  
-  Linking.openURL(url).catch(err => {
-    console.error('Could not start navigation:', err);
-    Alert.alert('Error', 'Could not start navigation.');
-  });
-};
+    if (!park) return;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${park.latitude},${park.longitude}&travelmode=driving&dir_action=navigate`;
+    Linking.openURL(url).catch(err => {
+      console.error('Could not start navigation:', err);
+      Alert.alert('Error', 'Could not start navigation.');
+    });
+  };
 
-const handleVideoPress = async (video) => {
-  const url = `https://www.youtube.com/watch?v=${video.id}`;
-  try {
-    await Linking.openURL(url);
-  } catch (error) {
-    console.error('Could not open YouTube:', error);
-  }
-};
+  const handleVideoPress = async (video) => {
+    const url = `https://www.youtube.com/watch?v=${video.id}`;
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Could not open YouTube:', error);
+    }
+  };
+
+  const renderVideosSection = () => {
+    if (loadingVideos) {
+      return (
+        <View style={styles.videoStatusContainer}>
+          <Text style={styles.videoStatusText}>Loading videos...</Text>
+        </View>
+      );
+    }
+    
+    if (videos.length === 0) {
+      return (
+        <View style={styles.videoStatusContainer}>
+          <Text style={styles.videoStatusText}>No videos available</Text>
+        </View>
+      );
+    }
+    
+    return (
+      <FlatList
+        data={videos}
+        renderItem={({ item }) => (
+          <VideoCard video={item} onPress={() => handleVideoPress(item)} />
+        )}
+        keyExtractor={(item) => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.videoList}
+      />
+    );
+  };
+
+  const renderParkContent = () => (
+    <>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🎥 Shorts</Text>
+        {renderVideosSection()}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📸 Photos</Text>
+        <PhotoGallery photos={park.photos} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📝 About</Text>
+        <AboutSection description={park.description} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⭐ Reviews & Tips</Text>
+        <ReviewsSection reviews={park.reviews} />
+      </View>
+    </>
+  );
+
+  const renderTrailContent = () => (
+    <>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🥾 Trail Info</Text>
+        <View style={styles.trailInfoCard}>
+          <View style={styles.trailInfoRow}>
+            <Text style={styles.trailInfoLabel}>Type</Text>
+            <Text style={styles.trailInfoValue}>
+              {park.highway === 'path' && 'Footpath'}
+              {park.highway === 'footway' && 'Pedestrian Path'}
+              {park.highway === 'track' && 'Track / Forest Road'}
+              {!['path', 'footway', 'track'].includes(park.highway) && 'Trail'}
+            </Text>
+          </View>
+
+              <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🎥 Related Videos</Text>
+      {renderVideosSection()}
+    </View>
+
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>📍 Source</Text>
+      <Text style={styles.trailDescription}>
+        Data from OpenStreetMap contributors · © OSM
+      </Text>
+    </View>
+          
+          <View style={styles.trailInfoRow}>
+            <Text style={styles.trailInfoLabel}>Surface</Text>
+            <Text style={styles.trailInfoValue}>
+              {park.surface ? park.surface.charAt(0).toUpperCase() + park.surface.slice(1) : 'Unknown'}
+            </Text>
+          </View>
+          
+          {park.difficulty && (
+            <View style={styles.trailInfoRow}>
+              <Text style={styles.trailInfoLabel}>Difficulty</Text>
+              <Text style={styles.trailInfoValue}>{park.difficulty}</Text>
+            </View>
+          )}
+          
+          <View style={styles.trailInfoRow}>
+  <Text style={styles.trailInfoLabel}>Bicycle</Text>
+  <Text style={[styles.trailInfoValue, park.bicycle ? styles.trailYes : styles.trailUnknown]}>
+    {park.bicycle ? '✓ Allowed' : '? Unknown'}
+  </Text>
+          </View>
+          
+          <View style={styles.trailInfoRow}>
+  <Text style={styles.trailInfoLabel}>Wheelchair</Text>
+  <Text style={[styles.trailInfoValue, park.wheelchair ? styles.trailYes : styles.trailUnknown]}>
+    {park.wheelchair ? '✓ Accessible' : '? Unknown'}
+  </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📝 About</Text>
+        <Text style={styles.trailDescription}>
+          This trail is part of the OpenStreetMap database, maintained by volunteer contributors worldwide. 
+          For detailed maps, conditions, and reviews, consider checking AllTrails or local hiking resources.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📍 Source</Text>
+        <Text style={styles.trailDescription}>
+          Data from OpenStreetMap contributors · © OSM
+        </Text>
+      </View>
+    </>
+  );
 
   return (
     <>
@@ -97,7 +229,11 @@ const handleVideoPress = async (video) => {
                     <View style={styles.stickyHeader}>
                       <View style={styles.headerContent}>
                         <Text style={styles.parkName}>{park.name}</Text>
-                        <Text style={styles.subtitle}>⭐ 4.6 · National Park</Text>
+                        <Text style={styles.subtitle}>
+                          {isTrail 
+                            ? `🥾 Trail · ${park.states}` 
+                            : `⭐ 4.6 · ${park.designation || 'National Park'}`}
+                        </Text>
                       </View>
                       <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                         <Text style={styles.closeText}>✕</Text>
@@ -112,9 +248,9 @@ const handleVideoPress = async (video) => {
                         <TouchableOpacity style={styles.primaryButton} onPress={handleDirections}>
                           <Text style={styles.primaryButtonText}>🧭 Directions</Text>
                         </TouchableOpacity>
-<TouchableOpacity style={styles.secondaryButton} onPress={handleStart}>
-  <Text style={styles.secondaryButtonText}>▶ Start</Text>
-</TouchableOpacity>
+                        <TouchableOpacity style={styles.secondaryButton} onPress={handleStart}>
+                          <Text style={styles.secondaryButtonText}>▶ Start</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity 
                           style={[styles.secondaryButton, tripInfo.inTrip && styles.addedButton]} 
                           onPress={handleAddPress}
@@ -133,44 +269,7 @@ const handleVideoPress = async (video) => {
                         </View>
                       )}
 
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>🎥 Shorts</Text>
-{loadingVideos ? (
-  <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ color: '#999' }}>Loading videos...</Text>
-  </View>
-) : videos.length === 0 ? (
-  <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ color: '#999' }}>No videos available</Text>
-  </View>
-) : (
-  <FlatList
-    data={videos}
-    renderItem={({ item }) => (
-      <VideoCard video={item} onPress={() => handleVideoPress(item)} />
-    )}
-    keyExtractor={(item) => item.id}
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.videoList}
-  />
-)}
-                      </View>
-
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>📸 Photos</Text>
-                        <PhotoGallery photos={park.photos} />
-                      </View>
-
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>📝 About</Text>
-                        <AboutSection description={park.description} />
-                      </View>
-
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>⭐ Reviews & Tips</Text>
-                        <ReviewsSection reviews={park.reviews} />
-                      </View>
+                      {isTrail ? renderTrailContent() : renderParkContent()}
 
                       <View style={styles.info}>
                         <Text style={styles.infoTitle}>Coordinates</Text>

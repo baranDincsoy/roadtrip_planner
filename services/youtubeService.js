@@ -5,13 +5,14 @@ const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3';
 const CACHE_PREFIX = '@youtube_cache_';
 const CACHE_TTL_DAYS = 7;
 
-const getCacheKey = (parkName) => {
-  return `${CACHE_PREFIX}${parkName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+const getCacheKey = (parkName, type = 'park') => {
+  const cleanName = parkName.replace(/[^a-zA-Z0-9]/g, '_');
+  return `${CACHE_PREFIX}${type}_${cleanName}`;
 };
 
-const getCachedVideos = async (parkName) => {
+const getCachedVideos = async (parkName, type) => {
   try {
-    const key = getCacheKey(parkName);
+    const key = getCacheKey(parkName, type);
     const cached = await AsyncStorage.getItem(key);
     
     if (!cached) return null;
@@ -32,9 +33,9 @@ const getCachedVideos = async (parkName) => {
   }
 };
 
-const setCachedVideos = async (parkName, videos) => {
+const setCachedVideos = async (parkName, videos, type) => {
   try {
-    const key = getCacheKey(parkName);
+    const key = getCacheKey(parkName, type);
     const data = {
       timestamp: Date.now(),
       videos,
@@ -63,18 +64,29 @@ const parseDuration = (isoDuration) => {
   return hours * 3600 + minutes * 60 + seconds;
 };
 
-export const fetchVideosForPark = async (parkName) => {
+export const fetchVideosForPark = async (parkName, options = {}) => {
   if (!parkName) return [];
   
-  const cached = await getCachedVideos(parkName);
+  const { type = 'park', state } = options;
+  
+  const cached = await getCachedVideos(parkName, type);
   if (cached) {
-    console.log(`Using cached videos for: ${parkName}`);
+    console.log(`Using cached videos for: ${parkName} (${type})`);
     return cached;
   }
   
   try {
-    const query = encodeURIComponent(`${parkName} national park`);
-const searchUrl = `${YOUTUBE_BASE_URL}/search?part=snippet&maxResults=15&type=video&q=${query}&videoEmbeddable=true&videoDuration=short&key=${YOUTUBE_API_KEY}`;
+    let queryString;
+    if (type === 'trail') {
+      queryString = state 
+        ? `${parkName} hiking trail ${state}` 
+        : `${parkName} hiking trail`;
+    } else {
+      queryString = `${parkName} national park`;
+    }
+    
+    const query = encodeURIComponent(queryString);
+    const searchUrl = `${YOUTUBE_BASE_URL}/search?part=snippet&maxResults=15&type=video&q=${query}&videoEmbeddable=true&videoDuration=short&key=${YOUTUBE_API_KEY}`;
     
     const searchResponse = await fetch(searchUrl);
     
@@ -91,44 +103,44 @@ const searchUrl = `${YOUTUBE_BASE_URL}/search?part=snippet&maxResults=15&type=vi
     }
     
     const videoIds = searchData.items.map(item => item.id.videoId).join(',');
-const statsUrl = `${YOUTUBE_BASE_URL}/videos?part=statistics,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+    const statsUrl = `${YOUTUBE_BASE_URL}/videos?part=statistics,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
     
     const statsResponse = await fetch(statsUrl);
     const statsData = statsResponse.ok ? await statsResponse.json() : { items: [] };
     
-const statsMap = {};
-const durationMap = {};
-if (statsData.items) {
-  statsData.items.forEach(item => {
-    statsMap[item.id] = item.statistics;
-    durationMap[item.id] = parseDuration(item.contentDetails?.duration);
-  });
-}
+    const statsMap = {};
+    const durationMap = {};
+    if (statsData.items) {
+      statsData.items.forEach(item => {
+        statsMap[item.id] = item.statistics;
+        durationMap[item.id] = parseDuration(item.contentDetails?.duration);
+      });
+    }
     
-const allVideos = searchData.items
-  .map((item) => {
-    const videoId = item.id.videoId;
-    const stats = statsMap[videoId] || {};
-    const duration = durationMap[videoId] || 0;
+    const allVideos = searchData.items
+      .map((item) => {
+        const videoId = item.id.videoId;
+        const stats = statsMap[videoId] || {};
+        const duration = durationMap[videoId] || 0;
+        
+        return {
+          id: videoId,
+          title: item.snippet.title,
+          channel: item.snippet.channelTitle,
+          thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+          views: formatViewCount(stats.viewCount),
+          duration,
+          publishedAt: item.snippet.publishedAt,
+        };
+      })
+      .filter(video => video.duration > 0 && video.duration <= 90);
     
-    return {
-      id: videoId,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-      views: formatViewCount(stats.viewCount),
-      duration,
-      publishedAt: item.snippet.publishedAt,
-    };
-  })
-  .filter(video => video.duration > 0 && video.duration <= 90);
-
-const videos = allVideos.slice(0, 5).map((video, index) => ({
-  ...video,
-  isYours: index === 0 && video.channel.toLowerCase().includes('yourchannel'),
-}));
+    const videos = allVideos.slice(0, 5).map((video, index) => ({
+      ...video,
+      isYours: index === 0 && video.channel.toLowerCase().includes('yourchannel'),
+    }));
     
-    await setCachedVideos(parkName, videos);
+    await setCachedVideos(parkName, videos, type);
     
     return videos;
   } catch (error) {

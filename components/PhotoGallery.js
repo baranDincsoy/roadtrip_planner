@@ -7,13 +7,25 @@ export default function PhotoGallery({ photos }) {
     return null;
   }
 
+  const getPhotoUri = (item) => {
+    if (typeof item === 'string') return item;
+    return item.url || item.uri || null;
+  };
+
+  const getKey = (item, index) => {
+    if (typeof item === 'string') return `photo_${index}`;
+    return item.id || item.url || `photo_${index}`;
+  };
+
   return (
     <FlatList
       data={photos}
-      renderItem={({ item }) => (
-        <Image source={{ uri: item.url }} style={styles.photo} />
-      )}
-      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => {
+        const uri = getPhotoUri(item);
+        if (!uri) return null;
+        return <Image source={{ uri }} style={styles.photo} />;
+      }}
+      keyExtractor={(item, index) => getKey(item, index)}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.list}

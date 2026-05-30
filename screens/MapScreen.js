@@ -27,9 +27,9 @@ export default function MapScreen({ navigation }) {
 
   const mapRef = useRef(null);
 
-  useEffect(() => {
-    loadParks();
-  }, []);
+useEffect(() => {
+  loadParks();
+}, []);
 
   useEffect(() => {
   if (categories.length > 0) {

@@ -10,6 +10,7 @@ import TripSelectorModal from './TripSelectorModal';
 import { isParkInAnyTrip } from '../services/tripService';
 import { fetchVideosForPark } from '../services/youtubeService';
 import { openDirections } from '../utils/linking';
+import { enrichLocation } from '../services/placesService';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
@@ -19,12 +20,22 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
 
   const isTrail = park?.type === 'trail';
 
+  const [enrichment, setEnrichment] = useState(null);
+const [loadingEnrichment, setLoadingEnrichment] = useState(false);
+
 useEffect(() => {
   if (park && visible) {
     checkTripStatus();
     loadVideos();
+    loadEnrichment();
   }
 }, [park, visible]);
+
+useEffect(() => {
+  if (!visible) {
+    setEnrichment(null);
+  }
+}, [visible]);
 
   const checkTripStatus = async () => {
     if (!park) return;
@@ -45,6 +56,31 @@ const loadVideos = async () => {
   setVideos(fetchedVideos);
   setLoadingVideos(false);
 };
+const loadEnrichment = async () => {
+  if (!park) return;
+  
+  if (isTrail) {
+    console.log('Skipping enrichment for trail (OSM name is sufficient)');
+    setEnrichment(null);
+    return;
+  }
+  
+  setLoadingEnrichment(true);
+  try {
+    const data = await enrichLocation(
+      park.latitude, 
+      park.longitude, 
+      park.shortName || park.name
+    );
+    setEnrichment(data);
+  } catch (error) {
+    console.error('Failed to enrich:', error);
+    setEnrichment(null);
+  } finally {
+    setLoadingEnrichment(false);
+  }
+};
+
   const handleAddPress = () => {
     setSelectorVisible(true);
   };
@@ -119,10 +155,12 @@ const loadVideos = async () => {
         {renderVideosSection()}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📸 Photos</Text>
-        <PhotoGallery photos={park.photos} />
-      </View>
+{(enrichment?.photos?.length > 0 || park.photos?.length > 0) && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>📸 Photos</Text>
+    <PhotoGallery photos={enrichment?.photos || park.photos} />
+  </View>
+)}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📝 About</Text>
@@ -155,6 +193,13 @@ const loadVideos = async () => {
       <Text style={styles.sectionTitle}>🎥 Related Videos</Text>
       {renderVideosSection()}
     </View>
+
+    {enrichment?.photos?.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>📸 Photos</Text>
+    <PhotoGallery photos={enrichment.photos} />
+  </View>
+)}
 
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>📍 Source</Text>
@@ -227,14 +272,21 @@ const loadVideos = async () => {
                 {park && (
                   <>
                     <View style={styles.stickyHeader}>
-                      <View style={styles.headerContent}>
-                        <Text style={styles.parkName}>{park.name}</Text>
-                        <Text style={styles.subtitle}>
-                          {isTrail 
-                            ? `🥾 Trail · ${park.states}` 
-                            : `⭐ 4.6 · ${park.designation || 'National Park'}`}
-                        </Text>
-                      </View>
+<View style={styles.headerContent}>
+  <Text style={styles.parkName}>
+    {enrichment?.googleName || park.name}
+  </Text>
+  <Text style={styles.subtitle}>
+    {enrichment?.rating 
+      ? `⭐ ${enrichment.rating} (${enrichment.totalRatings.toLocaleString()} reviews)`
+      : isTrail 
+        ? `🥾 Trail · ${park.states}` 
+        : `⭐ ${park.designation || 'National Park'}`}
+  </Text>
+  {enrichment?.googleName && enrichment.googleName !== park.name && (
+    <Text style={styles.alternateName}>OSM: {park.name}</Text>
+  )}
+</View>
                       <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                         <Text style={styles.closeText}>✕</Text>
                       </TouchableOpacity>

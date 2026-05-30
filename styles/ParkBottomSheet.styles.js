@@ -185,4 +185,10 @@ trailUnknown: {
   color: '#999',
   fontStyle: 'italic',
 },
+alternateName: {
+  fontSize: 11,
+  color: '#999',
+  fontStyle: 'italic',
+  marginTop: 2,
+},
 });

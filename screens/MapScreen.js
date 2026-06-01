@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, ActivityIndicator, Text, TouchableOpacity, Modal, TouchableWithoutFeedback, FlatList } from 'react-native';
+import { View, ActivityIndicator, Text, TouchableOpacity, Modal, TouchableWithoutFeedback, FlatList, Alert } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { styles } from '../styles/MapScreen.styles';
 import { fetchNationalParks, getAvailableCategories } from '../services/npsService';
 import { fetchTrailsForState, fetchParksForState, getUSStates } from '../services/osmService';
+import { searchParksInCity } from '../services/citySearchService';
 import ParkBottomSheet from '../components/ParkBottomSheet';
 import FilterDrawer from '../components/DrawerContent';
 import SearchBar from '../components/SearchBar';
+import CitySearchModal from '../components/CitySearchModal';
 
 export default function MapScreen({ navigation }) {
   const [parks, setParks] = useState([]);
@@ -26,11 +28,30 @@ export default function MapScreen({ navigation }) {
   const [loadingTrails, setLoadingTrails] = useState(false);
   const [stateSelectorVisible, setStateSelectorVisible] = useState(false);
 
+  const [cityParksFromGoogle, setCityParksFromGoogle] = useState([]);
+  const [currentCity, setCurrentCity] = useState(null);
+  const [loadingCityParks, setLoadingCityParks] = useState(false);
+  const [citySearchVisible, setCitySearchVisible] = useState(false);
+
   const mapRef = useRef(null);
 
-useEffect(() => {
-  loadParks();
-}, []);
+  useEffect(() => {
+    loadParks();
+  }, []);
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      const updatedCategories = categories.map(cat => {
+        if (cat.name === 'Trail') return { ...cat, count: trails.length };
+        if (cat.name === 'City Park') return { ...cat, count: cityParks.length + cityParksFromGoogle.length };
+        return cat;
+      });
+      
+      if (JSON.stringify(updatedCategories) !== JSON.stringify(categories)) {
+        setCategories(updatedCategories);
+      }
+    }
+  }, [trails, cityParks, cityParksFromGoogle]);
 
   const loadParks = async () => {
     try {
@@ -73,43 +94,46 @@ useEffect(() => {
     
     setLoadingTrails(true);
     try {
-
-console.log('Loading trails first...');
-const trailsData = await fetchTrailsForState(stateCode);
-setTrails(trailsData);
-
-console.log('Then loading parks...');
-const parksData = await fetchParksForState(stateCode);
-setCityParks(parksData);
-
-console.log(`Total parks: ${parksData.length}`);
-console.log('First 10 park samples:');
-parksData.slice(0, 10).forEach(p => {
-  console.log(`  - ${p.name} @ ${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}`);
-});
-
-const charlotteParks = parksData.filter(p => 
-  p.latitude > 34.9 && p.latitude < 35.5 && 
-  p.longitude > -81.2 && p.longitude < -80.5
-);
-console.log(`Charlotte area parks (wider): ${charlotteParks.length}`);
-if (charlotteParks.length > 0) {
-  console.log('Charlotte parks:', charlotteParks.slice(0, 10).map(p => p.name));
-}
-
-const freedomParks = parksData.filter(p => 
-  p.name.toLowerCase().includes('freedom')
-);
-console.log(`Parks named "Freedom": ${freedomParks.length}`);
-if (freedomParks.length > 0) {
-  console.log('Freedom parks:', freedomParks.map(p => `${p.name} @ ${p.latitude}, ${p.longitude}`));
-}
+      const trailsData = await fetchTrailsForState(stateCode);
+      setTrails(trailsData);
+      
+      const parksData = await fetchParksForState(stateCode);
+      setCityParks(parksData);
     } catch (err) {
       console.error('Failed to load state data:', err);
       setTrails([]);
       setCityParks([]);
     } finally {
       setLoadingTrails(false);
+    }
+  };
+
+  const handleCitySearch = async (cityQuery) => {
+    if (!cityQuery) {
+      setCurrentCity(null);
+      setCityParksFromGoogle([]);
+      setCitySearchVisible(false);
+      return;
+    }
+    
+    setLoadingCityParks(true);
+    try {
+      const parks = await searchParksInCity(cityQuery);
+      setCityParksFromGoogle(parks);
+      setCurrentCity(cityQuery);
+      setCitySearchVisible(false);
+      
+      if (parks.length === 0) {
+        Alert.alert(
+          'No Parks Found',
+          `We couldn't find any parks in "${cityQuery}". Try adding a state code (e.g. "Charlotte NC").`
+        );
+      }
+    } catch (err) {
+      console.error('Failed to search city parks:', err);
+      Alert.alert('Error', 'Could not search for parks. Please try again.');
+    } finally {
+      setLoadingCityParks(false);
     }
   };
 
@@ -199,6 +223,7 @@ if (freedomParks.length > 0) {
 
   const showCityParks = selectedCategories.includes('City Park');
   const filteredCityParks = showCityParks ? cityParks : [];
+  const filteredCityParksFromGoogle = showCityParks ? cityParksFromGoogle : [];
 
   if (loading) {
     return (
@@ -268,6 +293,19 @@ if (freedomParks.length > 0) {
             onPress={() => handleMarkerPress(park)}
           />
         ))}
+        
+        {filteredCityParksFromGoogle.map((park) => (
+          <Marker
+            key={park.id}
+            coordinate={{
+              latitude: park.latitude,
+              longitude: park.longitude,
+            }}
+            title={park.name}
+            pinColor={park.pinColor}
+            onPress={() => handleMarkerPress(park)}
+          />
+        ))}
       </MapView>
 
       <TouchableOpacity
@@ -285,7 +323,7 @@ if (freedomParks.length > 0) {
 
       <View style={styles.countBadge}>
         <Text style={styles.countText}>
-          {filteredParks.length + filteredTrails.length + filteredCityParks.length} location{(filteredParks.length + filteredTrails.length + filteredCityParks.length) !== 1 ? 's' : ''}
+          {filteredParks.length + filteredTrails.length + filteredCityParks.length + filteredCityParksFromGoogle.length} location{(filteredParks.length + filteredTrails.length + filteredCityParks.length + filteredCityParksFromGoogle.length) !== 1 ? 's' : ''}
           {zoomLevel === 'wide' && filteredParks.length > 0 && ' (zoom in for more)'}
         </Text>
       </View>
@@ -302,6 +340,21 @@ if (freedomParks.length > 0) {
             : selectedState 
               ? `Trails: ${selectedState}` 
               : 'Add Trails'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.cityButton}
+        onPress={() => setCitySearchVisible(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.cityIcon}>🌳</Text>
+        <Text style={styles.cityText}>
+          {loadingCityParks 
+            ? 'Searching...' 
+            : currentCity 
+              ? `City: ${currentCity}` 
+              : 'Find City Parks'}
         </Text>
       </TouchableOpacity>
 
@@ -327,6 +380,14 @@ if (freedomParks.length > 0) {
         onSelectAll={handleSelectAll}
         onClearAll={handleClearAll}
         onClose={() => setFilterVisible(false)}
+      />
+
+      <CitySearchModal
+        visible={citySearchVisible}
+        currentCity={currentCity}
+        loading={loadingCityParks}
+        onClose={() => setCitySearchVisible(false)}
+        onSearch={handleCitySearch}
       />
 
       <Modal

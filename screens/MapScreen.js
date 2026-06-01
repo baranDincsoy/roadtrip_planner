@@ -85,28 +85,37 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-  const loadStateData = async (stateCode) => {
-    if (!stateCode) {
-      setTrails([]);
-      setCityParks([]);
-      return;
-    }
-    
-    setLoadingTrails(true);
-    try {
-      const trailsData = await fetchTrailsForState(stateCode);
-      setTrails(trailsData);
-      
-      const parksData = await fetchParksForState(stateCode);
-      setCityParks(parksData);
-    } catch (err) {
-      console.error('Failed to load state data:', err);
-      setTrails([]);
-      setCityParks([]);
-    } finally {
-      setLoadingTrails(false);
-    }
-  };
+const loadStateData = async (stateCode) => {
+  if (!stateCode) {
+    setTrails([]);
+    setCityParks([]);
+    return;
+  }
+  
+  setLoadingTrails(true);
+  
+  try {
+    const trailsData = await fetchTrailsForState(stateCode);
+    setTrails(trailsData);
+  } catch (err) {
+    console.error('Failed to load trails:', err);
+    setTrails([]);
+    Alert.alert(
+      'Trails Unavailable', 
+      'OpenStreetMap servers are busy right now. Try again in a minute.'
+    );
+  }
+  
+  try {
+    const parksData = await fetchParksForState(stateCode);
+    setCityParks(parksData);
+  } catch (err) {
+    console.error('Failed to load OSM parks:', err);
+    setCityParks([]);
+  }
+  
+  setLoadingTrails(false);
+};
 
   const handleCitySearch = async (cityQuery) => {
     if (!cityQuery) {

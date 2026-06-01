@@ -1,6 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const OVERPASS_URL = 'https://overpass.kumi.systems/api/interpreter';
+const OVERPASS_ENDPOINTS = [
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://overpass.openstreetmap.fr/api/interpreter',
+];
 const CACHE_PREFIX_TRAILS = '@osm_trails_';
 const CACHE_PREFIX_PARKS = '@osm_parks_';
 const CACHE_TTL_DAYS = 30;
@@ -97,21 +102,44 @@ const setCachedData = async (prefix, stateCode, data) => {
 };
 
 const fetchOsmData = async (query) => {
-  const url = `${OVERPASS_URL}?data=${encodeURIComponent(query)}`;
+  let lastError = null;
   
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'RoadtripPlanner/1.0',
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Overpass API error: ${response.status}`);
+  for (let i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
+    const endpoint = OVERPASS_ENDPOINTS[i];
+    const url = `${endpoint}?data=${encodeURIComponent(query)}`;
+    
+    try {
+      console.log(`Trying endpoint ${i + 1}/${OVERPASS_ENDPOINTS.length}: ${endpoint.split('//')[1].split('/')[0]}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'RoadtripPlanner/1.0',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`✓ Success on endpoint ${i + 1}`);
+      return data;
+      
+    } catch (error) {
+      console.log(`✗ Endpoint ${i + 1} failed: ${error.message}`);
+      lastError = error;
+      
+      if (i < OVERPASS_ENDPOINTS.length - 1) {
+        const waitMs = 1000 * (i + 1);
+        console.log(`Waiting ${waitMs}ms before next try...`);
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+      }
+    }
   }
   
-  return await response.json();
+  throw new Error(`All Overpass endpoints failed. Last error: ${lastError?.message}`);
 };
 
 const buildTrailsQuery = (stateCode) => {

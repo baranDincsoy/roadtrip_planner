@@ -29,17 +29,6 @@ export default function MapScreen({ navigation }) {
   const mapRef = useRef(null);
 
 useEffect(() => {
-  const clearOldCache = async () => {
-    const { clearParksCache } = require('../services/osmService');
-    await clearParksCache();
-    console.log('Old parks cache cleared');
-  };
-  clearOldCache();
-  
-  loadParks();
-}, []);
-
-useEffect(() => {
   loadParks();
 }, []);
 

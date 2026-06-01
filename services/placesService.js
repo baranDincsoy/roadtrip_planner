@@ -5,7 +5,6 @@ const PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const CACHE_PREFIX = '@places_enrich_';
 const CACHE_TTL_DAYS = 30;
 
-console.log('Places API Key loaded:', PLACES_API_KEY ? 'YES (length: ' + PLACES_API_KEY.length + ')' : 'NO - UNDEFINED');
 
 const PREFERRED_TYPES = [
   'park',

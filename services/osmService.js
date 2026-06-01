@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
-const CACHE_PREFIX = '@osm_trails_';
+const OVERPASS_URL = 'https://overpass.kumi.systems/api/interpreter';
+const CACHE_PREFIX_TRAILS = '@osm_trails_';
+const CACHE_PREFIX_PARKS = '@osm_parks_';
 const CACHE_TTL_DAYS = 30;
 
 const US_STATES = [
@@ -61,45 +62,61 @@ export const getUSStates = () => {
   return US_STATES;
 };
 
-const getCachedTrails = async (stateCode) => {
+const getCachedData = async (prefix, stateCode) => {
   try {
-    const key = `${CACHE_PREFIX}${stateCode}`;
+    const key = `${prefix}${stateCode}`;
     const cached = await AsyncStorage.getItem(key);
     
     if (!cached) return null;
     
     const parsed = JSON.parse(cached);
-    const ageInMs = Date.now() - parsed.timestamp;
-    const ageInDays = ageInMs / (1000 * 60 * 60 * 24);
+    const ageInDays = (Date.now() - parsed.timestamp) / (1000 * 60 * 60 * 24);
     
     if (ageInDays > CACHE_TTL_DAYS) {
       await AsyncStorage.removeItem(key);
       return null;
     }
     
-    return parsed.trails;
+    return parsed.data;
   } catch (error) {
     console.error('Cache read error:', error);
     return null;
   }
 };
 
-const setCachedTrails = async (stateCode, trails) => {
+const setCachedData = async (prefix, stateCode, data) => {
   try {
-    const key = `${CACHE_PREFIX}${stateCode}`;
-    const data = {
+    const key = `${prefix}${stateCode}`;
+    await AsyncStorage.setItem(key, JSON.stringify({
       timestamp: Date.now(),
-      trails,
-    };
-    await AsyncStorage.setItem(key, JSON.stringify(data));
+      data,
+    }));
   } catch (error) {
     console.error('Cache write error:', error);
   }
 };
 
-const buildOverpassQuery = (stateCode) => {
+const fetchOsmData = async (query) => {
+  const url = `${OVERPASS_URL}?data=${encodeURIComponent(query)}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'RoadtripPlanner/1.0',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Overpass API error: ${response.status}`);
+  }
+  
+  return await response.json();
+};
+
+const buildTrailsQuery = (stateCode) => {
   return `
-[out:json][timeout:60];
+[out:json][timeout:90];
 area["ISO3166-2"="US-${stateCode}"]->.searchArea;
 (
   way["highway"~"^(path|footway|track)$"]["name"]["foot"!="no"](area.searchArea);
@@ -108,39 +125,34 @@ out center tags 500;
   `.trim();
 };
 
+const buildParksQuery = (stateCode) => {
+  return `
+[out:json][timeout:90];
+area["ISO3166-2"="US-${stateCode}"]->.searchArea;
+(
+  way["leisure"="park"]["name"](area.searchArea);
+  relation["leisure"="park"]["name"](area.searchArea);
+);
+out center 300;
+  `.trim();
+};
+
 export const fetchTrailsForState = async (stateCode) => {
   if (!stateCode) return [];
   
-  const cached = await getCachedTrails(stateCode);
+  const cached = await getCachedData(CACHE_PREFIX_TRAILS, stateCode);
   if (cached) {
     console.log(`Using cached trails for: ${stateCode} (${cached.length} trails)`);
     return cached;
   }
   
   try {
-    const query = buildOverpassQuery(stateCode);
-    
     console.log(`Fetching trails for ${stateCode}...`);
-    
-const url = `${OVERPASS_URL}?data=${encodeURIComponent(query)}`;
-
-const response = await fetch(url, {
-  method: 'GET',
-  headers: {
-    'Accept': 'application/json',
-    'User-Agent': 'RoadtripPlanner/1.0',
-  },
-});
-    
-    if (!response.ok) {
-      throw new Error(`Overpass API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
+    const query = buildTrailsQuery(stateCode);
+    const data = await fetchOsmData(query);
     
     if (!data.elements || data.elements.length === 0) {
-      console.log(`No trails found for ${stateCode}`);
-      await setCachedTrails(stateCode, []);
+      await setCachedData(CACHE_PREFIX_TRAILS, stateCode, []);
       return [];
     }
     
@@ -164,8 +176,7 @@ const response = await fetch(url, {
       }));
     
     console.log(`Fetched ${trails.length} trails for ${stateCode}`);
-    
-    await setCachedTrails(stateCode, trails);
+    await setCachedData(CACHE_PREFIX_TRAILS, stateCode, trails);
     
     return trails;
   } catch (error) {
@@ -174,14 +185,74 @@ const response = await fetch(url, {
   }
 };
 
+export const fetchParksForState = async (stateCode) => {
+  if (!stateCode) return [];
+  
+  const cached = await getCachedData(CACHE_PREFIX_PARKS, stateCode);
+  if (cached) {
+    console.log(`Using cached parks for: ${stateCode} (${cached.length} parks)`);
+    return cached;
+  }
+  
+  try {
+    console.log(`Fetching parks for ${stateCode}...`);
+    const query = buildParksQuery(stateCode);
+    const data = await fetchOsmData(query);
+    
+    
+    if (!data.elements || data.elements.length === 0) {
+      await setCachedData(CACHE_PREFIX_PARKS, stateCode, []);
+      return [];
+    }
+    
+    const parks = data.elements
+      .filter(el => (el.center || (el.lat && el.lon)) && el.tags?.name)
+      .map(el => {
+        const lat = el.center ? el.center.lat : el.lat;
+        const lon = el.center ? el.center.lon : el.lon;
+        
+        return {
+          id: `park_osm_${el.id}`,
+          name: el.tags.name,
+          shortName: el.tags.name,
+          latitude: lat,
+          longitude: lon,
+          type: 'city_park',
+          designation: 'City Park',
+          categoryIcon: '🌳',
+          pinColor: '#4caf50',
+          states: stateCode,
+        };
+      });
+    
+console.log(`Fetched ${parks.length} parks for ${stateCode}`);
+    await setCachedData(CACHE_PREFIX_PARKS, stateCode, parks);
+    
+    return parks;
+  } catch (error) {
+    console.error('Error fetching OSM parks:', error);
+    return [];
+  }
+};
+
 export const clearTrailsCache = async () => {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const cacheKeys = keys.filter(k => k.startsWith(CACHE_PREFIX));
+    const cacheKeys = keys.filter(k => k.startsWith(CACHE_PREFIX_TRAILS));
     await AsyncStorage.multiRemove(cacheKeys);
     return { success: true, cleared: cacheKeys.length };
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    return { success: false };
+  }
+};
+
+export const clearParksCache = async () => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const cacheKeys = keys.filter(k => k.startsWith(CACHE_PREFIX_PARKS));
+    await AsyncStorage.multiRemove(cacheKeys);
+    return { success: true, cleared: cacheKeys.length };
+  } catch (error) {
     return { success: false };
   }
 };

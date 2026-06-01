@@ -4,7 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { styles } from '../styles/MapScreen.styles';
 import { fetchNationalParks, getAvailableCategories } from '../services/npsService';
-import { fetchTrailsForState, getUSStates } from '../services/osmService';
+import { fetchTrailsForState, fetchParksForState, getUSStates } from '../services/osmService';
 import ParkBottomSheet from '../components/ParkBottomSheet';
 import FilterDrawer from '../components/DrawerContent';
 import SearchBar from '../components/SearchBar';
@@ -21,6 +21,7 @@ export default function MapScreen({ navigation }) {
   const [zoomLevel, setZoomLevel] = useState('wide');
   
   const [trails, setTrails] = useState([]);
+  const [cityParks, setCityParks] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
   const [loadingTrails, setLoadingTrails] = useState(false);
   const [stateSelectorVisible, setStateSelectorVisible] = useState(false);
@@ -28,23 +29,19 @@ export default function MapScreen({ navigation }) {
   const mapRef = useRef(null);
 
 useEffect(() => {
+  const clearOldCache = async () => {
+    const { clearParksCache } = require('../services/osmService');
+    await clearParksCache();
+    console.log('Old parks cache cleared');
+  };
+  clearOldCache();
+  
   loadParks();
 }, []);
 
-  useEffect(() => {
-  if (categories.length > 0) {
-    const updatedCategories = categories.map(cat => 
-      cat.name === 'Trail' 
-        ? { ...cat, count: trails.length }
-        : cat
-    );
-    
-    if (JSON.stringify(updatedCategories) !== JSON.stringify(categories)) {
-      setCategories(updatedCategories);
-    }
-  }
-}, [trails]);
-
+useEffect(() => {
+  loadParks();
+}, []);
 
   const loadParks = async () => {
     try {
@@ -61,8 +58,15 @@ useEffect(() => {
         count: 0,
       };
       
-      setCategories([...cats, trailCategory]);
-      setSelectedCategories([...cats.map(c => c.name), 'Trail']);
+      const cityParkCategory = {
+        name: 'City Park',
+        icon: '🌳',
+        color: '#4caf50',
+        count: 0,
+      };
+      
+      setCategories([...cats, trailCategory, cityParkCategory]);
+      setSelectedCategories([...cats.map(c => c.name), 'Trail', 'City Park']);
     } catch (err) {
       setError('Failed to load parks. Please try again.');
       console.error(err);
@@ -71,19 +75,50 @@ useEffect(() => {
     }
   };
 
-  const loadTrails = async (stateCode) => {
+  const loadStateData = async (stateCode) => {
     if (!stateCode) {
       setTrails([]);
+      setCityParks([]);
       return;
     }
     
     setLoadingTrails(true);
     try {
-      const data = await fetchTrailsForState(stateCode);
-      setTrails(data);
+
+console.log('Loading trails first...');
+const trailsData = await fetchTrailsForState(stateCode);
+setTrails(trailsData);
+
+console.log('Then loading parks...');
+const parksData = await fetchParksForState(stateCode);
+setCityParks(parksData);
+
+console.log(`Total parks: ${parksData.length}`);
+console.log('First 10 park samples:');
+parksData.slice(0, 10).forEach(p => {
+  console.log(`  - ${p.name} @ ${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}`);
+});
+
+const charlotteParks = parksData.filter(p => 
+  p.latitude > 34.9 && p.latitude < 35.5 && 
+  p.longitude > -81.2 && p.longitude < -80.5
+);
+console.log(`Charlotte area parks (wider): ${charlotteParks.length}`);
+if (charlotteParks.length > 0) {
+  console.log('Charlotte parks:', charlotteParks.slice(0, 10).map(p => p.name));
+}
+
+const freedomParks = parksData.filter(p => 
+  p.name.toLowerCase().includes('freedom')
+);
+console.log(`Parks named "Freedom": ${freedomParks.length}`);
+if (freedomParks.length > 0) {
+  console.log('Freedom parks:', freedomParks.map(p => `${p.name} @ ${p.latitude}, ${p.longitude}`));
+}
     } catch (err) {
-      console.error('Failed to load trails:', err);
+      console.error('Failed to load state data:', err);
       setTrails([]);
+      setCityParks([]);
     } finally {
       setLoadingTrails(false);
     }
@@ -92,12 +127,13 @@ useEffect(() => {
   const handleSelectState = (stateCode) => {
     setSelectedState(stateCode);
     setStateSelectorVisible(false);
-    loadTrails(stateCode);
+    loadStateData(stateCode);
   };
 
   const handleClearTrails = () => {
     setSelectedState(null);
     setTrails([]);
+    setCityParks([]);
   };
 
   const handleToggleCategory = (categoryName) => {
@@ -172,6 +208,9 @@ useEffect(() => {
   const showTrails = selectedCategories.includes('Trail');
   const filteredTrails = showTrails ? trails : [];
 
+  const showCityParks = selectedCategories.includes('City Park');
+  const filteredCityParks = showCityParks ? cityParks : [];
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -227,6 +266,19 @@ useEffect(() => {
             onPress={() => handleMarkerPress(trail)}
           />
         ))}
+        
+        {filteredCityParks.map((park) => (
+          <Marker
+            key={park.id}
+            coordinate={{
+              latitude: park.latitude,
+              longitude: park.longitude,
+            }}
+            title={park.name}
+            pinColor={park.pinColor}
+            onPress={() => handleMarkerPress(park)}
+          />
+        ))}
       </MapView>
 
       <TouchableOpacity
@@ -244,7 +296,7 @@ useEffect(() => {
 
       <View style={styles.countBadge}>
         <Text style={styles.countText}>
-          {filteredParks.length + filteredTrails.length} location{(filteredParks.length + filteredTrails.length) !== 1 ? 's' : ''}
+          {filteredParks.length + filteredTrails.length + filteredCityParks.length} location{(filteredParks.length + filteredTrails.length + filteredCityParks.length) !== 1 ? 's' : ''}
           {zoomLevel === 'wide' && filteredParks.length > 0 && ' (zoom in for more)'}
         </Text>
       </View>

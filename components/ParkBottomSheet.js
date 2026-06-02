@@ -118,6 +118,16 @@ const loadEnrichment = async () => {
     }
   };
 
+  const handleWebsitePress = async (url) => {
+  if (!url) return;
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    console.error('Could not open website:', error);
+    Alert.alert('Error', 'Could not open the website.');
+  }
+};
+
   const renderVideosSection = () => {
     if (loadingVideos) {
       return (
@@ -149,31 +159,86 @@ const loadEnrichment = async () => {
     );
   };
 
-  const renderParkContent = () => (
-    <>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🎥 Shorts</Text>
-        {renderVideosSection()}
+const renderParkContent = () => (
+  <>
+    {(enrichment?.address || enrichment?.isOpen !== null || enrichment?.website) && (
+      <View style={styles.infoCard}>
+        {enrichment?.address && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoIcon}>📍</Text>
+            <Text style={styles.infoText} numberOfLines={2}>{enrichment.address}</Text>
+          </View>
+        )}
+        
+        {enrichment?.isOpen !== null && enrichment?.isOpen !== undefined && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoIcon}>🕐</Text>
+            <Text style={[styles.infoText, enrichment.isOpen ? styles.openText : styles.closedText]}>
+              {enrichment.isOpen ? 'Open now' : 'Closed'}
+            </Text>
+          </View>
+        )}
+        
+        {enrichment?.website && (
+          <TouchableOpacity 
+            style={styles.infoRow}
+            onPress={() => handleWebsitePress(enrichment.website)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.infoIcon}>🌐</Text>
+            <Text style={[styles.infoText, styles.websiteText]} numberOfLines={1}>
+              Visit website
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
+    )}
 
-{(enrichment?.photos?.length > 0 || park.photos?.length > 0) && (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>📸 Photos</Text>
-    <PhotoGallery photos={enrichment?.photos || park.photos} />
-  </View>
-)}
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🎥 Shorts</Text>
+      {renderVideosSection()}
+    </View>
 
+    {(enrichment?.photos?.length > 0 || park.photos?.length > 0) && (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📝 About</Text>
-        <AboutSection description={park.description} />
+        <Text style={styles.sectionTitle}>📸 Photos</Text>
+        <PhotoGallery photos={enrichment?.photos || park.photos} />
       </View>
+    )}
 
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>📝 About</Text>
+      <AboutSection description={park.description} />
+    </View>
+
+    {enrichment?.reviews?.length > 0 ? (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⭐ Reviews</Text>
+        <View style={styles.reviewsContainer}>
+          {enrichment.reviews.map((review, index) => (
+            <View key={`review_${index}`} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewAuthor}>{review.author}</Text>
+                <View style={styles.reviewMeta}>
+                  <Text style={styles.reviewStars}>{'⭐'.repeat(review.rating)}</Text>
+                  <Text style={styles.reviewTime}>{review.time}</Text>
+                </View>
+              </View>
+              <Text style={styles.reviewText} numberOfLines={6}>
+                {review.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    ) : (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>⭐ Reviews & Tips</Text>
         <ReviewsSection reviews={park.reviews} />
       </View>
-    </>
-  );
+    )}
+  </>
+);
 
   const renderTrailContent = () => (
     <>

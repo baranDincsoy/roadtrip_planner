@@ -191,4 +191,82 @@ alternateName: {
   fontStyle: 'italic',
   marginTop: 2,
 },
+infoCard: {
+  marginHorizontal: 20,
+  marginVertical: 16,
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  backgroundColor: '#f8f9fa',
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+infoRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 8,
+},
+infoIcon: {
+  fontSize: 16,
+  marginRight: 10,
+  width: 22,
+},
+infoText: {
+  flex: 1,
+  fontSize: 13,
+  color: '#333',
+  lineHeight: 18,
+},
+openText: {
+  color: '#2e7d32',
+  fontWeight: '600',
+},
+closedText: {
+  color: '#d32f2f',
+  fontWeight: '600',
+},
+websiteText: {
+  color: '#1976d2',
+  fontWeight: '600',
+  textDecorationLine: 'underline',
+},
+reviewsContainer: {
+  paddingHorizontal: 20,
+},
+reviewCard: {
+  backgroundColor: '#fafafa',
+  padding: 14,
+  borderRadius: 10,
+  marginBottom: 10,
+  borderLeftWidth: 3,
+  borderLeftColor: '#1e3a5f',
+},
+reviewHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+reviewAuthor: {
+  fontSize: 13,
+  fontWeight: '700',
+  color: '#1e3a5f',
+  flex: 1,
+},
+reviewMeta: {
+  alignItems: 'flex-end',
+},
+reviewStars: {
+  fontSize: 11,
+  marginBottom: 2,
+},
+reviewTime: {
+  fontSize: 10,
+  color: '#999',
+},
+reviewText: {
+  fontSize: 12,
+  color: '#444',
+  lineHeight: 18,
+},
 });

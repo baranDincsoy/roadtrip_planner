@@ -269,4 +269,10 @@ reviewText: {
   color: '#444',
   lineHeight: 18,
 },
+distanceText: {
+  fontSize: 12,
+  color: '#1976d2',
+  marginTop: 2,
+  fontWeight: '600',
+},
 });

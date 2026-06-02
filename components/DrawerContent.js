@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 
 import { styles } from '../styles/DrawerContent.styles';
 
-export default function FilterDrawer({ visible, categories, selectedCategories, onToggleCategory, onSelectAll, onClearAll, onClose }) {
+export default function FilterDrawer({ visible, categories, selectedCategories, onToggleCategory, onSelectAll, onClearAll, onClose, navigation }) {
   const slideAnim = useRef(new Animated.Value(-300)).current;
 
   useEffect(() => {
@@ -75,6 +75,20 @@ export default function FilterDrawer({ visible, categories, selectedCategories, 
                   );
                 })}
               </ScrollView>
+
+              <View style={styles.footer}>
+                <TouchableOpacity 
+                  style={styles.favoritesNavButton}
+                  onPress={() => {
+                    onClose();
+                    navigation.navigate('Favorites');
+                  }}
+                >
+                  <Text style={styles.favoritesNavIcon}>❤️</Text>
+                  <Text style={styles.favoritesNavText}>My Favorites</Text>
+                  <Text style={styles.favoritesNavArrow}>›</Text>
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </TouchableWithoutFeedback>
         </View>

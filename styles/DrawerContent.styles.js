@@ -102,4 +102,34 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  footer: {
+  borderTopWidth: 1,
+  borderTopColor: '#eee',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  backgroundColor: '#fff',
+},
+favoritesNavButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  backgroundColor: '#fce4ec',
+  borderRadius: 12,
+},
+favoritesNavIcon: {
+  fontSize: 18,
+  marginRight: 12,
+},
+favoritesNavText: {
+  flex: 1,
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#c2185b',
+},
+favoritesNavArrow: {
+  fontSize: 20,
+  color: '#c2185b',
+  fontWeight: '300',
+},
 });

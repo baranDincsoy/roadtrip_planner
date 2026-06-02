@@ -18,6 +18,11 @@ export default function SearchBar({ parks, onSelectResult }) {
 
   const showResults = focused && query.trim().length > 0;
 
+  const filtered = parks.filter(p => {
+  const name = p.shortName || p.name || '';
+  return name.toLowerCase().includes(query.toLowerCase());
+});
+
   const handleSelect = (park) => {
     setQuery('');
     setFocused(false);

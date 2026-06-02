@@ -275,4 +275,26 @@ distanceText: {
   marginTop: 2,
   fontWeight: '600',
 },
+favoriteButton: {
+  marginHorizontal: 20,
+  marginTop: 8,
+  paddingVertical: 12,
+  borderRadius: 12,
+  backgroundColor: '#fff',
+  borderWidth: 1.5,
+  borderColor: '#e91e63',
+  alignItems: 'center',
+},
+favoriteButtonActive: {
+  backgroundColor: '#fce4ec',
+  borderColor: '#c2185b',
+},
+favoriteButtonText: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#e91e63',
+},
+favoriteButtonTextActive: {
+  color: '#c2185b',
+},
 });

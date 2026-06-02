@@ -12,6 +12,7 @@ import { fetchVideosForPark } from '../services/youtubeService';
 import { openDirections } from '../utils/linking';
 import { enrichLocation } from '../services/placesService';
 import { getCurrentLocation, calculateDistance, formatDistance } from '../services/locationService';
+import { isFavorite, toggleFavorite } from '../services/favoritesService';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
@@ -24,14 +25,17 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
 
   const isTrail = park?.type === 'trail';
 
-  useEffect(() => {
-    if (park && visible) {
-      checkTripStatus();
-      loadVideos();
-      loadEnrichment();
-      loadDistance();
-    }
-  }, [park, visible]);
+  const [isFav, setIsFav] = useState(false);
+
+useEffect(() => {
+  if (park && visible) {
+    checkTripStatus();
+    loadVideos();
+    loadEnrichment();
+    loadDistance();
+    checkFavoriteStatus();
+  }
+}, [park, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -103,6 +107,19 @@ const loadDistance = async () => {
   
   setDistance(miles);
 };
+
+const checkFavoriteStatus = async () => {
+  if (!park) return;
+  const status = await isFavorite(park.id);
+  setIsFav(status);
+};
+
+const handleFavoritePress = async () => {
+  if (!park) return;
+  const result = await toggleFavorite(park);
+  setIsFav(result.isFavorite);
+};
+
   const handleAddPress = () => {
     setSelectorVisible(true);
   };
@@ -380,6 +397,15 @@ const loadDistance = async () => {
                           </Text>
                         </TouchableOpacity>
                       </View>
+
+                      <TouchableOpacity 
+                        style={[styles.favoriteButton, isFav && styles.favoriteButtonActive]} 
+                         onPress={handleFavoritePress}
+                          >
+                          <Text style={[styles.favoriteButtonText, isFav && styles.favoriteButtonTextActive]}>
+                          {isFav ? '❤️ Saved' : '🤍 Save to Favorites'}
+                          </Text>
+                        </TouchableOpacity>
 
                       {tripInfo.inTrip && (
                         <View style={styles.tripBadge}>

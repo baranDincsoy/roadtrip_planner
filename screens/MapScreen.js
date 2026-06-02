@@ -11,7 +11,7 @@ import FilterDrawer from '../components/DrawerContent';
 import SearchBar from '../components/SearchBar';
 import CitySearchModal from '../components/CitySearchModal';
 
-export default function MapScreen({ navigation }) {
+export default function MapScreen({ navigation, route }){
   const [parks, setParks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -33,6 +33,9 @@ export default function MapScreen({ navigation }) {
   const [loadingCityParks, setLoadingCityParks] = useState(false);
   const [citySearchVisible, setCitySearchVisible] = useState(false);
 
+  const [pendingFocus, setPendingFocus] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
+
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -52,6 +55,32 @@ export default function MapScreen({ navigation }) {
       }
     }
   }, [trails, cityParks, cityParksFromGoogle]);
+
+useEffect(() => {
+  const focusLocation = route?.params?.focusLocation;
+  
+  if (focusLocation) {
+    setPendingFocus(focusLocation);
+    setSelectedPark(focusLocation);
+    setModalVisible(true);
+    navigation.setParams({ focusLocation: undefined });
+  }
+}, [route?.params?.focusLocation]);
+
+useEffect(() => {
+  if (mapReady && pendingFocus && mapRef.current) {
+    mapRef.current.animateToRegion({
+      latitude: pendingFocus.latitude,
+      longitude: pendingFocus.longitude,
+      latitudeDelta: 0.5,
+      longitudeDelta: 0.5,
+    }, 1000);
+    
+    setPendingFocus(null);
+  }
+}, [mapReady, pendingFocus]);
+
+
 
   const loadParks = async () => {
     try {
@@ -85,37 +114,37 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-const loadStateData = async (stateCode) => {
-  if (!stateCode) {
-    setTrails([]);
-    setCityParks([]);
-    return;
-  }
-  
-  setLoadingTrails(true);
-  
-  try {
-    const trailsData = await fetchTrailsForState(stateCode);
-    setTrails(trailsData);
-  } catch (err) {
-    console.error('Failed to load trails:', err);
-    setTrails([]);
-    Alert.alert(
-      'Trails Unavailable', 
-      'OpenStreetMap servers are busy right now. Try again in a minute.'
-    );
-  }
-  
-  try {
-    const parksData = await fetchParksForState(stateCode);
-    setCityParks(parksData);
-  } catch (err) {
-    console.error('Failed to load OSM parks:', err);
-    setCityParks([]);
-  }
-  
-  setLoadingTrails(false);
-};
+  const loadStateData = async (stateCode) => {
+    if (!stateCode) {
+      setTrails([]);
+      setCityParks([]);
+      return;
+    }
+    
+    setLoadingTrails(true);
+    
+    try {
+      const trailsData = await fetchTrailsForState(stateCode);
+      setTrails(trailsData);
+    } catch (err) {
+      console.error('Failed to load trails:', err);
+      setTrails([]);
+      Alert.alert(
+        'Trails Unavailable', 
+        'OpenStreetMap servers are busy right now. Try again in a minute.'
+      );
+    }
+    
+    try {
+      const parksData = await fetchParksForState(stateCode);
+      setCityParks(parksData);
+    } catch (err) {
+      console.error('Failed to load OSM parks:', err);
+      setCityParks([]);
+    }
+    
+    setLoadingTrails(false);
+  };
 
   const handleCitySearch = async (cityQuery) => {
     if (!cityQuery) {
@@ -234,6 +263,13 @@ const loadStateData = async (stateCode) => {
   const filteredCityParks = showCityParks ? cityParks : [];
   const filteredCityParksFromGoogle = showCityParks ? cityParksFromGoogle : [];
 
+const allSearchableLocations = [
+  ...parks,
+  ...trails.map(t => ({ ...t, shortName: t.name })),
+  ...cityParks.map(p => ({ ...p, shortName: p.name })),
+  ...cityParksFromGoogle.map(p => ({ ...p, shortName: p.name })),
+];
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -253,17 +289,18 @@ const loadStateData = async (stateCode) => {
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={{
-          latitude: 39.5,
-          longitude: -98.35,
-          latitudeDelta: 30,
-          longitudeDelta: 50,
-        }}
-        onRegionChangeComplete={handleRegionChange}
-      >
+<MapView
+  ref={mapRef}
+  style={styles.map}
+  initialRegion={{
+    latitude: 39.5,
+    longitude: -98.35,
+    latitudeDelta: 30,
+    longitudeDelta: 50,
+  }}
+  onRegionChangeComplete={handleRegionChange}
+  onMapReady={() => setMapReady(true)}
+>
         {filteredParks.map((park) => (
           <Marker
             key={park.id}
@@ -326,7 +363,7 @@ const loadStateData = async (stateCode) => {
       </TouchableOpacity>
 
       <SearchBar
-        parks={parks}
+        parks={allSearchableLocations}
         onSelectResult={handleSelectResult}
       />
 
@@ -389,6 +426,7 @@ const loadStateData = async (stateCode) => {
         onSelectAll={handleSelectAll}
         onClearAll={handleClearAll}
         onClose={() => setFilterVisible(false)}
+          navigation={navigation}
       />
 
       <CitySearchModal

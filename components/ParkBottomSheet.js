@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert, Linking } from 'react-native';
+import { Modal, Text, View, TouchableOpacity, TouchableWithoutFeedback, ScrollView, FlatList, Alert, Linking, Image } from 'react-native';
 
 import { styles } from '../styles/ParkBottomSheet.styles';
 import VideoCard from './VideoCard';
@@ -13,6 +13,7 @@ import { openDirections } from '../utils/linking';
 import { enrichLocation } from '../services/placesService';
 import { getCurrentLocation, calculateDistance, formatDistance } from '../services/locationService';
 import { isFavorite, toggleFavorite } from '../services/favoritesService';
+import { fetchWeatherForLocation, getWeatherIconUrl } from '../services/weatherService';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
@@ -27,6 +28,10 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
 
   const [isFav, setIsFav] = useState(false);
 
+  const [weather, setWeather] = useState(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
+
+
 useEffect(() => {
   if (park && visible) {
     checkTripStatus();
@@ -34,15 +39,17 @@ useEffect(() => {
     loadEnrichment();
     loadDistance();
     checkFavoriteStatus();
+    loadWeather();
   }
 }, [park, visible]);
 
-  useEffect(() => {
-    if (!visible) {
-      setEnrichment(null);
-      setDistance(null);
-    }
-  }, [visible]);
+useEffect(() => {
+  if (!visible) {
+    setEnrichment(null);
+    setDistance(null);
+    setWeather(null);
+  }
+}, [visible]);
 
   const checkTripStatus = async () => {
     if (!park) return;
@@ -106,6 +113,21 @@ const loadDistance = async () => {
   );
   
   setDistance(miles);
+};
+
+const loadWeather = async () => {
+  if (!park) return;
+  
+  setLoadingWeather(true);
+  try {
+    const data = await fetchWeatherForLocation(park.latitude, park.longitude);
+    setWeather(data);
+  } catch (error) {
+    console.error('Failed to load weather:', error);
+    setWeather(null);
+  } finally {
+    setLoadingWeather(false);
+  }
 };
 
 const checkFavoriteStatus = async () => {
@@ -197,6 +219,52 @@ const handleFavoritePress = async () => {
     );
   };
 
+  const renderWeatherSection = () => {
+  if (loadingWeather) {
+    return (
+      <View style={styles.videoStatusContainer}>
+        <Text style={styles.videoStatusText}>Loading weather...</Text>
+      </View>
+    );
+  }
+  
+  if (!weather || !weather.forecast || weather.forecast.length === 0) {
+    return (
+      <View style={styles.videoStatusContainer}>
+        <Text style={styles.videoStatusText}>Weather unavailable</Text>
+      </View>
+    );
+  }
+  
+  return (
+    <View style={styles.weatherContainer}>
+      <FlatList
+        data={weather.forecast}
+        renderItem={({ item, index }) => (
+          <View style={styles.weatherCard}>
+            <Text style={styles.weatherDay}>
+              {index === 0 ? 'Today' : item.dayName}
+            </Text>
+            <Image 
+              source={{ uri: getWeatherIconUrl(item.icon) }}
+              style={styles.weatherIcon}
+            />
+            <Text style={styles.weatherTemp}>{item.maxTemp}°</Text>
+            <Text style={styles.weatherTempMin}>{item.minTemp}°</Text>
+            <Text style={styles.weatherCondition} numberOfLines={1}>
+              {item.condition}
+            </Text>
+          </View>
+        )}
+        keyExtractor={(item) => item.date}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.weatherList}
+      />
+    </View>
+  );
+};
+
   const renderParkContent = () => (
     <>
       {(enrichment?.address || enrichment?.isOpen !== null || enrichment?.website) && (
@@ -235,6 +303,11 @@ const handleFavoritePress = async () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎥 Shorts</Text>
         {renderVideosSection()}
+      </View>
+
+      <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🌤️ 5-Day Forecast</Text>
+      {renderWeatherSection()}
       </View>
 
       {(enrichment?.photos?.length > 0 || park.photos?.length > 0) && (
@@ -326,6 +399,11 @@ const handleFavoritePress = async () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🎥 Related Videos</Text>
         {renderVideosSection()}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🌤️ 5-Day Forecast</Text>
+        {renderWeatherSection()}
       </View>
 
       <View style={styles.section}>

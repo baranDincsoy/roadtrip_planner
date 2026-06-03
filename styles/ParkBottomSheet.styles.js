@@ -297,4 +297,47 @@ favoriteButtonText: {
 favoriteButtonTextActive: {
   color: '#c2185b',
 },
+weatherContainer: {
+  paddingHorizontal: 20,
+},
+weatherList: {
+  paddingRight: 20,
+},
+weatherCard: {
+  backgroundColor: '#f8f9fa',
+  borderRadius: 12,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  marginRight: 8,
+  alignItems: 'center',
+  minWidth: 80,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+weatherDay: {
+  fontSize: 11,
+  fontWeight: '700',
+  color: '#1e3a5f',
+  marginBottom: 4,
+},
+weatherIcon: {
+  width: 50,
+  height: 50,
+  marginVertical: 2,
+},
+weatherTemp: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1e3a5f',
+},
+weatherTempMin: {
+  fontSize: 12,
+  color: '#999',
+  marginBottom: 4,
+},
+weatherCondition: {
+  fontSize: 10,
+  color: '#666',
+  textAlign: 'center',
+},
 });

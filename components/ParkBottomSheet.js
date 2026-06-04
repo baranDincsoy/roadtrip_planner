@@ -14,6 +14,7 @@ import { enrichLocation } from '../services/placesService';
 import { getCurrentLocation, calculateDistance, formatDistance } from '../services/locationService';
 import { isFavorite, toggleFavorite } from '../services/favoritesService';
 import { fetchWeatherForLocation, getWeatherIconUrl } from '../services/weatherService';
+import { fetchNearbyCampgrounds } from '../services/recreationService';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
@@ -31,6 +32,9 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
   const [weather, setWeather] = useState(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
 
+  const [campgrounds, setCampgrounds] = useState([]);
+  const [loadingCampgrounds, setLoadingCampgrounds] = useState(false);
+
 
 useEffect(() => {
   if (park && visible) {
@@ -40,6 +44,7 @@ useEffect(() => {
     loadDistance();
     checkFavoriteStatus();
     loadWeather();
+    loadCampgrounds();
   }
 }, [park, visible]);
 
@@ -48,6 +53,7 @@ useEffect(() => {
     setEnrichment(null);
     setDistance(null);
     setWeather(null);
+    setCampgrounds([]);
   }
 }, [visible]);
 
@@ -130,6 +136,26 @@ const loadWeather = async () => {
   }
 };
 
+const loadCampgrounds = async () => {
+  if (!park) return;
+  
+  if (isTrail) {
+    setCampgrounds([]);
+    return;
+  }
+  
+  setLoadingCampgrounds(true);
+  try {
+    const data = await fetchNearbyCampgrounds(park.latitude, park.longitude);
+    setCampgrounds(data);
+  } catch (error) {
+    console.error('Failed to load campgrounds:', error);
+    setCampgrounds([]);
+  } finally {
+    setLoadingCampgrounds(false);
+  }
+};
+
 const checkFavoriteStatus = async () => {
   if (!park) return;
   const status = await isFavorite(park.id);
@@ -187,6 +213,16 @@ const handleFavoritePress = async () => {
       Alert.alert('Error', 'Could not open the website.');
     }
   };
+
+  const handleCampgroundPress = async (url) => {
+  if (!url) return;
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    console.error('Could not open recreation.gov:', error);
+    Alert.alert('Error', 'Could not open the booking page.');
+  }
+};
 
   const renderVideosSection = () => {
     if (loadingVideos) {
@@ -265,6 +301,64 @@ const handleFavoritePress = async () => {
   );
 };
 
+const renderCampgroundsSection = () => {
+  if (loadingCampgrounds) {
+    return (
+      <View style={styles.videoStatusContainer}>
+        <Text style={styles.videoStatusText}>Loading campgrounds...</Text>
+      </View>
+    );
+  }
+  
+  if (campgrounds.length === 0) {
+    return (
+      <View style={styles.videoStatusContainer}>
+        <Text style={styles.videoStatusText}>No campgrounds within 25 miles</Text>
+      </View>
+    );
+  }
+  
+  return (
+    <View style={styles.campgroundsContainer}>
+      {campgrounds.slice(0, 5).map((campground) => (
+        <TouchableOpacity
+          key={campground.id}
+          style={styles.campgroundCard}
+          onPress={() => handleCampgroundPress(campground.recreationGovUrl)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.campgroundHeader}>
+            <Text style={styles.campgroundName} numberOfLines={1}>
+              {campground.name}
+            </Text>
+            {campground.reservable && (
+              <View style={styles.reservableBadge}>
+                <Text style={styles.reservableBadgeText}>Reservable</Text>
+              </View>
+            )}
+          </View>
+          
+          {campground.useFee && (
+            <Text style={styles.campgroundFee} numberOfLines={1}>
+              💰 {campground.useFee}
+            </Text>
+          )}
+          
+          <View style={styles.campgroundFooter}>
+            <Text style={styles.campgroundLink}>Reserve on Recreation.gov →</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+      
+      {campgrounds.length > 5 && (
+        <Text style={styles.campgroundMore}>
+          + {campgrounds.length - 5} more nearby
+        </Text>
+      )}
+    </View>
+  );
+};
+
   const renderParkContent = () => (
     <>
       {(enrichment?.address || enrichment?.isOpen !== null || enrichment?.website) && (
@@ -308,6 +402,11 @@ const handleFavoritePress = async () => {
       <View style={styles.section}>
       <Text style={styles.sectionTitle}>🌤️ 5-Day Forecast</Text>
       {renderWeatherSection()}
+      </View>
+
+      <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🏕️ Nearby Campgrounds</Text>
+      {renderCampgroundsSection()}
       </View>
 
       {(enrichment?.photos?.length > 0 || park.photos?.length > 0) && (

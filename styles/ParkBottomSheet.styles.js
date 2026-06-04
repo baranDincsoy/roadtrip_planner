@@ -340,4 +340,59 @@ weatherCondition: {
   color: '#666',
   textAlign: 'center',
 },
+campgroundsContainer: {
+  paddingHorizontal: 20,
+},
+campgroundCard: {
+  backgroundColor: '#f8f9fa',
+  borderRadius: 12,
+  padding: 14,
+  marginBottom: 10,
+  borderLeftWidth: 3,
+  borderLeftColor: '#558b2f',
+},
+campgroundHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 6,
+},
+campgroundName: {
+  flex: 1,
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#1e3a5f',
+  marginRight: 8,
+},
+reservableBadge: {
+  backgroundColor: '#558b2f',
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 8,
+},
+reservableBadgeText: {
+  fontSize: 10,
+  color: '#fff',
+  fontWeight: '700',
+},
+campgroundFee: {
+  fontSize: 11,
+  color: '#666',
+  marginBottom: 6,
+},
+campgroundFooter: {
+  marginTop: 4,
+},
+campgroundLink: {
+  fontSize: 12,
+  color: '#1976d2',
+  fontWeight: '600',
+},
+campgroundMore: {
+  fontSize: 11,
+  color: '#999',
+  textAlign: 'center',
+  fontStyle: 'italic',
+  marginTop: 4,
+},
 });

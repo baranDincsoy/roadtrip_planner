@@ -164,27 +164,16 @@ const loadCampgrounds = async () => {
 };
 
 const loadTrailDetails = async () => {
-  console.log('=== LOAD TRAIL DETAILS ===');
-  console.log('park:', park?.name);
-  console.log('park.type:', park?.type);
-  console.log('isTrail:', isTrail);
-  console.log('park.id:', park?.id);
-  
   if (!park || !isTrail) {
-    console.log('SKIPPED - not a trail');
     setTrailDetails(null);
     return;
   }
   
   setLoadingTrailDetails(true);
   try {
-    console.log('Calling fetchTrailDetails...');
     const data = await fetchTrailDetails(park.id);
-    console.log('Got data:', data);
-    console.log('Points count:', data?.points?.length);
     
     if (!data || !data.points || data.points.length < 2) {
-      console.log('Not enough points, setting null');
       setTrailDetails(null);
       return;
     }
@@ -192,17 +181,12 @@ const loadTrailDetails = async () => {
     const lengthMiles = calculatePathLength(data.points);
     const routeType = detectRouteType(data.points);
     
-    console.log('Calculated length:', lengthMiles);
-    console.log('Detected route type:', routeType);
-    
     setTrailDetails({
       lengthMiles,
       routeType,
       pointCount: data.pointCount,
       tags: data.tags,
     });
-    
-    console.log('Trail details set!');
   } catch (error) {
     console.error('Failed to load trail details:', error);
     setTrailDetails(null);
@@ -210,7 +194,6 @@ const loadTrailDetails = async () => {
     setLoadingTrailDetails(false);
   }
 };
-
 const checkFavoriteStatus = async () => {
   if (!park) return;
   const status = await isFavorite(park.id);

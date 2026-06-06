@@ -111,13 +111,19 @@ const fetchOsmData = async (query) => {
     try {
       console.log(`Trying endpoint ${i + 1}/${OVERPASS_ENDPOINTS.length}: ${endpoint.split('//')[1].split('/')[0]}`);
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'RoadtripPlanner/1.0',
         },
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -128,7 +134,8 @@ const fetchOsmData = async (query) => {
       return data;
       
     } catch (error) {
-      console.log(`✗ Endpoint ${i + 1} failed: ${error.message}`);
+      const errorMsg = error.name === 'AbortError' ? 'Timeout (30s)' : error.message;
+      console.log(`✗ Endpoint ${i + 1} failed: ${errorMsg}`);
       lastError = error;
       
       if (i < OVERPASS_ENDPOINTS.length - 1) {
@@ -282,5 +289,40 @@ export const clearParksCache = async () => {
     return { success: true, cleared: cacheKeys.length };
   } catch (error) {
     return { success: false };
+  }
+
+
+  
+};
+
+export const fetchTrailDetails = async (trailId) => {
+  const cleanId = trailId.replace('trail_', '');
+  
+  const query = `
+[out:json][timeout:30];
+way(${cleanId});
+out geom tags;
+  `.trim();
+  
+  try {
+    console.log(`Fetching trail details for: ${cleanId}`);
+    const data = await fetchOsmData(query);
+    
+    if (!data.elements || data.elements.length === 0) {
+      return null;
+    }
+    
+    const element = data.elements[0];
+    
+    const points = element.geometry || [];
+    
+    return {
+      points: points.map(p => ({ lat: p.lat, lon: p.lon })),
+      tags: element.tags || {},
+      pointCount: points.length,
+    };
+  } catch (error) {
+    console.error('Error fetching trail details:', error);
+    return null;
   }
 };

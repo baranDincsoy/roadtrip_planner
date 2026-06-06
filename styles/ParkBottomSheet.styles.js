@@ -395,4 +395,9 @@ campgroundMore: {
   fontStyle: 'italic',
   marginTop: 4,
 },
+trailHighlight: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#2e7d32',
+},
 });

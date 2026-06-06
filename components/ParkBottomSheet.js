@@ -15,6 +15,8 @@ import { getCurrentLocation, calculateDistance, formatDistance } from '../servic
 import { isFavorite, toggleFavorite } from '../services/favoritesService';
 import { fetchWeatherForLocation, getWeatherIconUrl } from '../services/weatherService';
 import { fetchNearbyCampgrounds } from '../services/recreationService';
+import { fetchTrailDetails } from '../services/osmService';
+import { calculatePathLength, detectRouteType, formatTrailLength } from '../utils/geometry';
 
 export default function ParkBottomSheet({ visible, park, onClose }) {
   const [tripInfo, setTripInfo] = useState({ inTrip: false });
@@ -35,6 +37,9 @@ export default function ParkBottomSheet({ visible, park, onClose }) {
   const [campgrounds, setCampgrounds] = useState([]);
   const [loadingCampgrounds, setLoadingCampgrounds] = useState(false);
 
+  const [trailDetails, setTrailDetails] = useState(null);
+  const [loadingTrailDetails, setLoadingTrailDetails] = useState(false);
+
 
 useEffect(() => {
   if (park && visible) {
@@ -45,6 +50,7 @@ useEffect(() => {
     checkFavoriteStatus();
     loadWeather();
     loadCampgrounds();
+    loadTrailDetails();
   }
 }, [park, visible]);
 
@@ -54,6 +60,7 @@ useEffect(() => {
     setDistance(null);
     setWeather(null);
     setCampgrounds([]);
+    setTrailDetails(null);
   }
 }, [visible]);
 
@@ -153,6 +160,54 @@ const loadCampgrounds = async () => {
     setCampgrounds([]);
   } finally {
     setLoadingCampgrounds(false);
+  }
+};
+
+const loadTrailDetails = async () => {
+  console.log('=== LOAD TRAIL DETAILS ===');
+  console.log('park:', park?.name);
+  console.log('park.type:', park?.type);
+  console.log('isTrail:', isTrail);
+  console.log('park.id:', park?.id);
+  
+  if (!park || !isTrail) {
+    console.log('SKIPPED - not a trail');
+    setTrailDetails(null);
+    return;
+  }
+  
+  setLoadingTrailDetails(true);
+  try {
+    console.log('Calling fetchTrailDetails...');
+    const data = await fetchTrailDetails(park.id);
+    console.log('Got data:', data);
+    console.log('Points count:', data?.points?.length);
+    
+    if (!data || !data.points || data.points.length < 2) {
+      console.log('Not enough points, setting null');
+      setTrailDetails(null);
+      return;
+    }
+    
+    const lengthMiles = calculatePathLength(data.points);
+    const routeType = detectRouteType(data.points);
+    
+    console.log('Calculated length:', lengthMiles);
+    console.log('Detected route type:', routeType);
+    
+    setTrailDetails({
+      lengthMiles,
+      routeType,
+      pointCount: data.pointCount,
+      tags: data.tags,
+    });
+    
+    console.log('Trail details set!');
+  } catch (error) {
+    console.error('Failed to load trail details:', error);
+    setTrailDetails(null);
+  } finally {
+    setLoadingTrailDetails(false);
   }
 };
 
@@ -450,69 +505,96 @@ const renderCampgroundsSection = () => {
     </>
   );
 
-  const renderTrailContent = () => (
-    <>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🥾 Trail Info</Text>
-        <View style={styles.trailInfoCard}>
+const renderTrailContent = () => (
+  <>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🥾 Trail Info</Text>
+      <View style={styles.trailInfoCard}>
+        
+        {trailDetails?.lengthMiles > 0 && (
           <View style={styles.trailInfoRow}>
-            <Text style={styles.trailInfoLabel}>Type</Text>
+            <Text style={styles.trailInfoLabel}>Length</Text>
+            <Text style={[styles.trailInfoValue, styles.trailHighlight]}>
+              {formatTrailLength(trailDetails.lengthMiles)}
+            </Text>
+          </View>
+        )}
+        
+        {trailDetails?.routeType && (
+          <View style={styles.trailInfoRow}>
+            <Text style={styles.trailInfoLabel}>Route Type</Text>
             <Text style={styles.trailInfoValue}>
-              {park.highway === 'path' && 'Footpath'}
-              {park.highway === 'footway' && 'Pedestrian Path'}
-              {park.highway === 'track' && 'Track / Forest Road'}
-              {!['path', 'footway', 'track'].includes(park.highway) && 'Trail'}
+              {trailDetails.routeType === 'loop' ? '🔄 Loop' : '➡️ Point-to-Point'}
             </Text>
           </View>
-          
+        )}
+        
+        {loadingTrailDetails && (
           <View style={styles.trailInfoRow}>
-            <Text style={styles.trailInfoLabel}>Surface</Text>
-            <Text style={styles.trailInfoValue}>
-              {park.surface ? park.surface.charAt(0).toUpperCase() + park.surface.slice(1) : 'Unknown'}
-            </Text>
+            <Text style={styles.trailInfoLabel}>Length</Text>
+            <Text style={styles.trailInfoValue}>Calculating...</Text>
           </View>
-          
-          {park.difficulty && (
-            <View style={styles.trailInfoRow}>
-              <Text style={styles.trailInfoLabel}>Difficulty</Text>
-              <Text style={styles.trailInfoValue}>{park.difficulty}</Text>
-            </View>
-          )}
-          
-          <View style={styles.trailInfoRow}>
-            <Text style={styles.trailInfoLabel}>Bicycle</Text>
-            <Text style={[styles.trailInfoValue, park.bicycle ? styles.trailYes : styles.trailUnknown]}>
-              {park.bicycle ? '✓ Allowed' : '? Unknown'}
-            </Text>
-          </View>
-          
-          <View style={styles.trailInfoRow}>
-            <Text style={styles.trailInfoLabel}>Wheelchair</Text>
-            <Text style={[styles.trailInfoValue, park.wheelchair ? styles.trailYes : styles.trailUnknown]}>
-              {park.wheelchair ? '✓ Accessible' : '? Unknown'}
-            </Text>
-          </View>
+        )}
+        
+        <View style={styles.trailInfoRow}>
+          <Text style={styles.trailInfoLabel}>Type</Text>
+          <Text style={styles.trailInfoValue}>
+            {park.highway === 'path' && 'Footpath'}
+            {park.highway === 'footway' && 'Pedestrian Path'}
+            {park.highway === 'track' && 'Track / Forest Road'}
+            {!['path', 'footway', 'track'].includes(park.highway) && 'Trail'}
+          </Text>
         </View>
+        
+        <View style={styles.trailInfoRow}>
+          <Text style={styles.trailInfoLabel}>Surface</Text>
+          <Text style={styles.trailInfoValue}>
+            {park.surface ? park.surface.charAt(0).toUpperCase() + park.surface.slice(1) : 'Unknown'}
+          </Text>
+        </View>
+        
+        {park.difficulty && (
+          <View style={styles.trailInfoRow}>
+            <Text style={styles.trailInfoLabel}>Difficulty</Text>
+            <Text style={styles.trailInfoValue}>{park.difficulty}</Text>
+          </View>
+        )}
+        
+        <View style={styles.trailInfoRow}>
+          <Text style={styles.trailInfoLabel}>Bicycle</Text>
+          <Text style={[styles.trailInfoValue, park.bicycle ? styles.trailYes : styles.trailUnknown]}>
+            {park.bicycle ? '✓ Allowed' : '? Unknown'}
+          </Text>
+        </View>
+        
+        <View style={styles.trailInfoRow}>
+          <Text style={styles.trailInfoLabel}>Wheelchair</Text>
+          <Text style={[styles.trailInfoValue, park.wheelchair ? styles.trailYes : styles.trailUnknown]}>
+            {park.wheelchair ? '✓ Accessible' : '? Unknown'}
+          </Text>
+        </View>
+        
       </View>
+    </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🎥 Related Videos</Text>
-        {renderVideosSection()}
-      </View>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🎥 Related Videos</Text>
+      {renderVideosSection()}
+    </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🌤️ 5-Day Forecast</Text>
-        {renderWeatherSection()}
-      </View>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>🌤️ 5-Day Forecast</Text>
+      {renderWeatherSection()}
+    </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📍 Source</Text>
-        <Text style={styles.trailDescription}>
-          Data from OpenStreetMap contributors · © OSM
-        </Text>
-      </View>
-    </>
-  );
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>📍 Source</Text>
+      <Text style={styles.trailDescription}>
+        Data from OpenStreetMap contributors · © OSM
+      </Text>
+    </View>
+  </>
+);
 
   return (
     <>
